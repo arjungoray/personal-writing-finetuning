@@ -37,3 +37,5 @@ def test_mock_training_completes_and_writes_events(tmp_path: Path):
     assert final_state["status"] == "completed"
     assert final_state["completedSteps"] == 2
     assert (run_dir / "run_events.jsonl").read_text(encoding="utf-8").count("\n") == 7
+    assert (run_dir / "checkpoints" / "step_2.json").exists()
+    assert (run_dir / "checkpoints" / "final.json").exists()

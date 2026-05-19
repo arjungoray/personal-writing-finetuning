@@ -35,7 +35,11 @@ def run_mock_training(job: dict) -> None:
     state = json.loads(state_path.read_text(encoding="utf-8"))
     rng = random.Random(job["trainingSeed"])
 
-    for step in range(1, job["totalSteps"] + 1):
+    checkpoint_dir = run_dir / "checkpoints"
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    start_step = int(state.get("completedSteps", 0)) + 1
+
+    for step in range(start_step, job["totalSteps"] + 1):
         if (run_dir / "cancel_requested").exists():
             now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             append_event(run_dir, {
@@ -95,6 +99,13 @@ def run_mock_training(job: dict) -> None:
             time.sleep(0.05)
 
         phase = "checkpointing" if step % job["checkpointInterval"] == 0 else "training"
+        if step % job["checkpointInterval"] == 0:
+            write_json(checkpoint_dir / f"step_{step}.json", {
+                "runId": job["runId"],
+                "step": step,
+                "mock": True,
+                "savedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            })
         state = update_state(
             run_dir,
             state,
@@ -111,6 +122,12 @@ def run_mock_training(job: dict) -> None:
         "step": job["totalSteps"],
         "message": "Mock final eval completed.",
         "metrics": {"eval_reward_mean": 0.42},
+    })
+    write_json(checkpoint_dir / "final.json", {
+        "runId": job["runId"],
+        "step": job["totalSteps"],
+        "mock": True,
+        "savedAt": now,
     })
     update_state(run_dir, state, status="completed", finishedAt=now, currentPhase="completed")
     write_json(run_dir / "judge_cache_summary.json", cache.summary())

@@ -143,3 +143,27 @@ export async function requestRunCancellation(id: string): Promise<RunState> {
     return latest;
   }
 }
+
+export async function resumeRun(id: string): Promise<RunState> {
+  await assertNoActiveRun();
+  const current = RunStateSchema.parse(await readJsonFile(runStatePath(id), null));
+  if (!["cancelled", "failed"].includes(current.status)) {
+    throw new Error("Only cancelled or failed runs can be resumed.");
+  }
+  const jobPath = join(runDir(id), "job.json");
+  const child = spawn("python3", ["worker/train.py", "--job", relative(process.cwd(), jobPath)], {
+    cwd: process.cwd(),
+    detached: false,
+    stdio: ["ignore", "ignore", "ignore"],
+  });
+  child.unref();
+  const next = RunStateSchema.parse({
+    ...current,
+    status: "running",
+    pid: child.pid ?? null,
+    finishedAt: null,
+    currentPhase: "resuming",
+  });
+  await writeJsonFile(runStatePath(id), next);
+  return next;
+}

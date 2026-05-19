@@ -32,6 +32,9 @@ export async function exportRunBundle(runId: string) {
   if (existsSync(join(baseRunDir, "run_events.jsonl"))) {
     await cp(join(baseRunDir, "run_events.jsonl"), join(exportDir, "run_events.jsonl"));
   }
+  if (existsSync(join(baseRunDir, "checkpoints"))) {
+    await cp(join(baseRunDir, "checkpoints"), join(exportDir, "checkpoints"), { recursive: true });
+  }
 
   const events = await listRunEvents(runId);
   if (existsSync(join(baseRunDir, "judge_cache_summary.json"))) {
@@ -60,6 +63,7 @@ export async function exportRunBundle(runId: string) {
       "judge_cache_summary.json",
       "run_events.jsonl",
       "eval_report.json",
+      "checkpoints/",
       "final_lora_adapter/",
       "README.md",
     ],
