@@ -106,9 +106,10 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
   }
 
   async function loadSettings() {
-    await runStep("Loading settings", async () => {
+    await runStep("Validating settings", async () => {
       const settings = await getJson<{ generatorModel: string; judgeModel: string; rayUnslothPath: string }>("/api/settings");
-      setMessage(`Generator ${settings.generatorModel}; judge ${settings.judgeModel}; Ray-Unsloth ${settings.rayUnslothPath}.`);
+      const validation = await postJson<{ ok: boolean; mockMode: boolean; message?: string }>("/api/settings/validate");
+      setMessage(`${validation.ok ? "Validated" : "Validation failed"}: generator ${settings.generatorModel}; judge ${settings.judgeModel}; ${validation.message ?? settings.rayUnslothPath}.`);
     });
   }
 

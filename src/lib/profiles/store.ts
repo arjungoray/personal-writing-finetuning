@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { z } from "zod";
-import { generateMockStyleProfile } from "@/lib/ai/mock/profile";
+import { generateStyleProfileWithMastra } from "@/ai/workflows/profile-dataset";
 import { getDataSubdirectoryPath, getIndexPath } from "@/lib/store/paths";
 import { readJsonFile, writeJsonFile } from "@/lib/store/json";
 import { emptyIndex, initializeDataDirectory, type VoiceLabIndex } from "@/lib/store/init";
@@ -34,9 +34,9 @@ export async function generateProfile(input: z.infer<typeof GenerateProfileReque
     throw new Error("One or more writing samples could not be found.");
   }
 
-  const profile = StyleProfileSchema.parse(generateMockStyleProfile({
+  const profile = StyleProfileSchema.parse(await generateStyleProfileWithMastra({
+    settings,
     writings,
-    generatorModel: settings.generatorModel,
     userDirectives: input.userDirectives.map((directive) => UserDirectiveSchema.parse({ id: randomUUID(), text: directive.text })),
   }));
 

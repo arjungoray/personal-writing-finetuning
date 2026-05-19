@@ -848,7 +848,7 @@ Status key:
 - [x] Profile approval API
 - [ ] Profile edit UI
 - [ ] Per-section regeneration UI
-- [ ] Live Gemini/Mastra profile generation
+- [x] Live Gemini/Mastra profile generation
 
 ### Dataset Generation And Review
 
@@ -859,7 +859,7 @@ Status key:
 - [x] Dataset approval API
 - [~] Dataset review UI by task type
 - [x] Bulk approve/regenerate/delete selected records
-- [ ] Live Gemini/Mastra dataset generation
+- [x] Live Gemini/Mastra dataset generation
 
 ### Reward Design And Judge
 
@@ -868,9 +868,9 @@ Status key:
 - [x] Hard negative gates
 - [x] Stable exact-hash judge cache key
 - [x] Persistent judge cache records
-- [ ] Live Gemini/Mastra LLM judge
-- [ ] Structured judgment records for every sampled completion
-- [ ] Token usage accounting
+- [~] Live Gemini/Mastra LLM judge
+- [~] Structured judgment records for every sampled completion
+- [~] Token usage accounting
 
 ### Training Runs
 

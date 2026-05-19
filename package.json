@@ -13,6 +13,7 @@
   "dependencies": {
     "@ai-sdk/google": "^3.0.75",
     "@mastra/core": "^1.35.0",
+    "ai": "^6.0.185",
     "lucide-react": "^0.468.0",
     "next": "^15.0.4",
     "react": "^19.0.0",
@@ -20,11 +21,11 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.2.0",
     "@types/minimatch": "^5.1.2",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.1",
     "@types/react-dom": "^19.0.2",
-    "@eslint/eslintrc": "^3.2.0",
     "eslint": "^9.16.0",
     "eslint-config-next": "^15.0.4",
     "typescript": "^5.7.2"

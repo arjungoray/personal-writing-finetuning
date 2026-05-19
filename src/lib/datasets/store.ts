@@ -1,7 +1,8 @@
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { z } from "zod";
-import { generateMockDatasetRecords, defaultPromptMix } from "@/lib/ai/mock/dataset";
+import { generateDatasetRecordsWithMastra } from "@/ai/workflows/profile-dataset";
+import { defaultPromptMix } from "@/lib/ai/mock/dataset";
 import { DatasetMetadataSchema, DatasetPromptRecordSchema, type DatasetMetadata, type DatasetPromptRecord } from "@/lib/datasets/types";
 import { emptyIndex, initializeDataDirectory, type VoiceLabIndex } from "@/lib/store/init";
 import { readJsonFile, writeJsonFile } from "@/lib/store/json";
@@ -52,14 +53,14 @@ export async function generateDataset(input: z.infer<typeof GenerateDatasetReque
   const writings = (await listWritingRecords()).filter((writing) => profile.sourceWritingIds.includes(writing.id));
   const timestamp = new Date().toISOString();
   const seed = input.seed ?? settings.datasetSeed;
-  const records = generateMockDatasetRecords({
+  const records = (await generateDatasetRecordsWithMastra({
+    settings,
     profile,
     writings,
     promptCount: input.promptCount,
     seed,
-    generatorModel: settings.generatorModel,
     timestamp,
-  }).map((record) => DatasetPromptRecordSchema.parse(record));
+  })).map((record) => DatasetPromptRecordSchema.parse(record));
 
   const id = `dataset_${Date.now()}`;
   const train = records.filter((record) => record.split === "train");
