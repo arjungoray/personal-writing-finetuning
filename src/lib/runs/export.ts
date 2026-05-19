@@ -34,11 +34,15 @@ export async function exportRunBundle(runId: string) {
   }
 
   const events = await listRunEvents(runId);
-  await writeJsonFile(join(exportDir, "judge_cache_summary.json"), {
-    cacheRecords: 0,
-    cacheHits: events.reduce((total, event) => total + (event.metrics.judge_cache_hits ?? 0), 0),
-    note: "Mock mode does not persist live judge cache records yet.",
-  });
+  if (existsSync(join(baseRunDir, "judge_cache_summary.json"))) {
+    await cp(join(baseRunDir, "judge_cache_summary.json"), join(exportDir, "judge_cache_summary.json"));
+  } else {
+    await writeJsonFile(join(exportDir, "judge_cache_summary.json"), {
+      cacheRecords: 0,
+      cacheHits: events.reduce((total, event) => total + (event.metrics.judge_cache_hits ?? 0), 0),
+      note: "No judge cache summary was written for this run.",
+    });
+  }
   await writeJsonFile(join(exportDir, "eval_report.json"), {
     runId,
     finalEvalEvents: events.filter((event) => event.phase === "eval"),

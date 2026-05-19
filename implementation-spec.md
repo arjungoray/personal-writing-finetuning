@@ -867,7 +867,7 @@ Status key:
 - [x] Reward mapping from 0-100 to `[-1, 1]`
 - [x] Hard negative gates
 - [x] Stable exact-hash judge cache key
-- [ ] Persistent judge cache records
+- [x] Persistent judge cache records
 - [ ] Live Gemini/Mastra LLM judge
 - [ ] Structured judgment records for every sampled completion
 - [ ] Token usage accounting

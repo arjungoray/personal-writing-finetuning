@@ -27,6 +27,7 @@ def test_mock_training_completes_and_writes_events(tmp_path: Path):
     run_mock_training({
         "runId": "run_test",
         "runDir": str(run_dir),
+        "dataDir": str(tmp_path),
         "totalSteps": 2,
         "checkpointInterval": 2,
         "trainingSeed": 1,

@@ -7,6 +7,8 @@ import random
 import statistics
 import time
 
+from judge_cache import JudgeCacheInput, JudgeCacheStore
+
 
 def write_json(path: Path, value: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -28,6 +30,7 @@ def update_state(run_dir: Path, state: dict, **updates: object) -> dict:
 
 def run_mock_training(job: dict) -> None:
     run_dir = Path(job["runDir"])
+    cache = JudgeCacheStore(Path(job["dataDir"]) / "judge-cache")
     state_path = run_dir / "run_state.json"
     state = json.loads(state_path.read_text(encoding="utf-8"))
     rng = random.Random(job["trainingSeed"])
@@ -47,6 +50,31 @@ def run_mock_training(job: dict) -> None:
             return
 
         rewards = [rng.uniform(-0.2, 0.9) for _ in range(4)]
+        for index, reward in enumerate(rewards):
+            cache_input = JudgeCacheInput(
+                prompt_text=f"mock prompt step {step}",
+                completion_text=f"mock completion {index}",
+                profile_hash="mock-profile",
+                rubric_hash="rubric-v1",
+                reference_excerpt_hashes=[f"ref-{index}"],
+                deterministic_evidence_hash=f"metrics-{step}-{index}",
+                judge_provider="mock",
+                judge_model="mock-judge",
+                judge_prompt_version="v1",
+            )
+            if cache.get(cache_input) is None:
+                cache.put(cache_input, {
+                    "style_similarity": round((reward + 1) * 50),
+                    "instruction_following": 80,
+                    "task_fulfillment": 80,
+                    "format_quality": 80,
+                    "final_score": round((reward + 1) * 50),
+                    "reward": reward,
+                    "violations": [],
+                    "positive_style_evidence": ["mock positive evidence"],
+                    "negative_style_evidence": [],
+                    "brief_rationale": "Deterministic mock judgment.",
+                })
         now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         for phase in ("sampling", "judging", "training"):
             append_event(run_dir, {
@@ -61,7 +89,7 @@ def run_mock_training(job: dict) -> None:
                     "reward_max": round(max(rewards), 6),
                     "reward_std": round(statistics.pstdev(rewards), 6),
                     "judge_calls": 4,
-                    "judge_cache_hits": 0,
+                    "judge_cache_hits": cache.hits,
                 },
             })
             time.sleep(0.05)
@@ -85,6 +113,7 @@ def run_mock_training(job: dict) -> None:
         "metrics": {"eval_reward_mean": 0.42},
     })
     update_state(run_dir, state, status="completed", finishedAt=now, currentPhase="completed")
+    write_json(run_dir / "judge_cache_summary.json", cache.summary())
 
 
 def main() -> None:
