@@ -881,13 +881,13 @@ Status key:
 - [x] Run cancellation signaling
 - [x] Progress UI reads mock run events
 - [x] Force-kill cancellation fallback
-- [~] Resume from completed step checkpoints
-- [~] Ray-Unsloth import and live training loop
+- [x] Resume from completed step checkpoints
+- [x] Ray-Unsloth import and live training loop
 - [x] LLM judge call for every rollout completion
 - [x] Group-relative advantage computation
 - [x] `forward_backward_async(..., loss_fn="importance_sampling")`
 - [x] `optim_step_async`
-- [~] Real checkpoint save interval
+- [x] Real checkpoint save interval
 - [~] Periodic and final eval against held-out prompts
 
 ### Export And Playground

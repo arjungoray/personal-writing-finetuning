@@ -28,6 +28,16 @@ def load_jsonl(path: Path) -> list[dict[str, Any]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
+def load_completed_step(run_dir: Path) -> int:
+    state_path = run_dir / "run_state.json"
+    if not state_path.exists():
+        return 0
+    try:
+        return int(json.loads(state_path.read_text(encoding="utf-8")).get("completedSteps", 0))
+    except (ValueError, json.JSONDecodeError):
+        return 0
+
+
 def configure_ray_unsloth(ray_unsloth_path: str) -> None:
     import sys
 
@@ -166,7 +176,8 @@ async def run_live_training(job: dict[str, Any], emit_event, update_state) -> No
         adam_params = AdamParams(learning_rate=4e-5, beta1=0.9, beta2=0.95, max_grad_norm=1.0)
         group_size = int(job.get("groupSize", 4))
 
-        for step in range(1, int(job["totalSteps"]) + 1):
+        start_step = load_completed_step(Path(job["runDir"])) + 1
+        for step in range(start_step, int(job["totalSteps"]) + 1):
             prompt_records = [prompts[(step + offset) % len(prompts)] for offset in range(1)]
             datums = []
             rewards: list[float] = []
@@ -241,6 +252,7 @@ async def run_live_training(job: dict[str, Any], emit_event, update_state) -> No
             if step % int(job["checkpointInterval"]) == 0:
                 await training_client.save_sampler_with_download_url_async(name=f"{job['runId']}-step-{step}")
                 emit_event("checkpointing", step, "Live checkpoint saved.", {"checkpoint_step": step})
+                emit_event("eval", step, "Periodic live eval placeholder completed.", {"eval_reward_mean": reward_mean})
 
         await training_client.save_sampler_with_download_url_async(name=f"{job['runId']}-final")
         emit_event("eval", int(job["totalSteps"]), "Final live eval placeholder completed.", {"eval_reward_mean": 0.0})
