@@ -1,5 +1,6 @@
 import { Brain, Database, FileText, Gauge, Play, SlidersHorizontal } from "lucide-react";
 import { FirstRunChecklist } from "@/components/first-run-checklist";
+import { MockFlowWorkspace } from "@/components/workspace/mock-flow";
 import { getAppEnvironment } from "@/lib/config/env";
 import { MODAL_PRICING } from "@/lib/pricing/modal";
 import { getFirstRunChecklist } from "@/lib/setup/checklist";
@@ -23,13 +24,13 @@ export default function Home() {
           <h1>Writing fine-tuning workspace</h1>
         </div>
         <div className="navActions">
-          <button type="button" aria-label="Settings">
+          <a className="iconButton" href="#workspace" aria-label="Settings">
             <SlidersHorizontal aria-hidden="true" />
-          </button>
-          <button type="button" className="primaryAction">
+          </a>
+          <a className="buttonLike primaryAction" href="#workspace">
             <Play aria-hidden="true" />
             Start flow
-          </button>
+          </a>
         </div>
       </nav>
 
@@ -66,6 +67,8 @@ export default function Home() {
           </article>
         ))}
       </section>
+
+      <MockFlowWorkspace initialChecks={checks} />
 
       <div className="contentGrid">
         <FirstRunChecklist checks={checks} />

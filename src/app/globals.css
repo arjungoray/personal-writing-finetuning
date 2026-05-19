@@ -26,11 +26,14 @@ body {
 }
 
 button,
-a {
+a,
+.buttonLike {
   color: inherit;
 }
 
-button {
+button,
+.buttonLike,
+.iconButton {
   align-items: center;
   background: var(--panel);
   border: 1px solid var(--line);
@@ -39,11 +42,20 @@ button {
   display: inline-flex;
   font: inherit;
   gap: 8px;
+  justify-content: center;
   min-height: 42px;
   padding: 0 14px;
+  text-decoration: none;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 button svg,
+.buttonLike svg,
+.iconButton svg,
 .pipelineItem svg,
 .metricTile svg,
 .checkIcon svg {
@@ -278,17 +290,154 @@ h3 {
   font-size: 0.9rem;
 }
 
+.workspacePanel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin-bottom: 18px;
+  padding: 20px;
+}
+
+.workspaceHeader,
+.workspaceActions,
+.stepButtons {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.workspaceHeader {
+  justify-content: space-between;
+}
+
+.workspaceActions,
+.stepButtons {
+  flex-wrap: wrap;
+}
+
+.workspaceGrid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+}
+
+.flowEditor,
+.flowStatus {
+  display: grid;
+  gap: 12px;
+}
+
+.flowEditor label {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+textarea,
+input {
+  background: #fbfcfb;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  font: inherit;
+  line-height: 1.5;
+  padding: 12px;
+  width: 100%;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.statusLine {
+  background: rgba(14, 107, 95, 0.1);
+  border: 1px solid rgba(14, 107, 95, 0.18);
+  border-radius: 8px;
+  color: var(--accent-strong);
+  font-weight: 700;
+  margin: 0;
+  padding: 12px;
+}
+
+.errorLine {
+  background: rgba(179, 50, 42, 0.1);
+  border: 1px solid rgba(179, 50, 42, 0.18);
+  border-radius: 8px;
+  color: var(--red);
+  margin: 0;
+  padding: 12px;
+}
+
+.artifactList,
+.runBox,
+.eventList {
+  background: #f8faf8;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.artifactList span,
+.runBox span,
+.eventList p {
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.35;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.compactChecks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.compactCheck {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  padding: 6px 9px;
+}
+
+.compactCheck.ready {
+  background: rgba(14, 107, 95, 0.1);
+  border-color: rgba(14, 107, 95, 0.2);
+  color: var(--accent-strong);
+}
+
+.compactCheck.missing {
+  background: rgba(179, 50, 42, 0.1);
+  border-color: rgba(179, 50, 42, 0.2);
+  color: var(--red);
+}
+
 @media (max-width: 900px) {
   .topNav,
   .heroBand,
   .contentGrid,
   .pipelineGrid,
-  .metricGrid {
+  .metricGrid,
+  .workspaceGrid {
     grid-template-columns: 1fr;
   }
 
-  .navActions {
+  .navActions,
+  .workspaceHeader {
+    align-items: start;
+  }
+
+  .navActions,
+  .workspaceHeader {
     justify-content: start;
+  }
+
+  .workspaceHeader {
+    flex-direction: column;
   }
 }
 
