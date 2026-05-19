@@ -906,4 +906,4 @@ Status key:
 - [x] Judge cache key stability tests
 - [x] Dataset split stratification tests
 - [x] Worker job state transition tests
-- [ ] UI interaction tests
+- [x] UI interaction tests
