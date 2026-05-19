@@ -880,7 +880,7 @@ Status key:
 - [x] One active run enforced
 - [x] Run cancellation signaling
 - [~] Progress UI reads mock run events
-- [ ] Force-kill cancellation fallback
+- [x] Force-kill cancellation fallback
 - [ ] Resume from completed step checkpoints
 - [ ] Ray-Unsloth import and live training loop
 - [ ] LLM judge call for every rollout completion

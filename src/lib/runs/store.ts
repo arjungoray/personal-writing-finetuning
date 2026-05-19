@@ -122,5 +122,24 @@ export async function requestRunCancellation(id: string): Promise<RunState> {
   const next = RunStateSchema.parse({ ...current, status: "cancel_requested", currentPhase: "cancelling" });
   await writeJsonFile(join(runDir(id), "cancel_requested"), { requestedAt: new Date().toISOString() });
   await writeJsonFile(runStatePath(id), next);
-  return next;
+
+  await new Promise((resolve) => setTimeout(resolve, 1500));
+  const latest = RunStateSchema.parse(await readJsonFile(runStatePath(id), next));
+  if (!["cancel_requested", "running"].includes(latest.status) || latest.pid === null) {
+    return latest;
+  }
+
+  try {
+    process.kill(latest.pid, "SIGTERM");
+    const killed = RunStateSchema.parse({
+      ...latest,
+      status: "cancelled",
+      finishedAt: new Date().toISOString(),
+      currentPhase: "force-killed",
+    });
+    await writeJsonFile(runStatePath(id), killed);
+    return killed;
+  } catch {
+    return latest;
+  }
 }
