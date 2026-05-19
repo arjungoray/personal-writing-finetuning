@@ -810,7 +810,7 @@ Status key:
 - [x] First-run checklist surface
 - [x] Modal pricing reference with source and last-verified date
 - [x] Mock mode available without API keys
-- [~] Interactive UI for mock profile, dataset, and run flow
+- [x] Interactive UI for mock profile, dataset, and run flow
 
 ### Local Storage
 
@@ -868,8 +868,8 @@ Status key:
 - [x] Hard negative gates
 - [x] Stable exact-hash judge cache key
 - [x] Persistent judge cache records
-- [~] Live Gemini/Mastra LLM judge
-- [~] Structured judgment records for every sampled completion
+- [x] Live Gemini/Mastra LLM judge
+- [x] Structured judgment records for every sampled completion
 - [x] Token usage accounting
 
 ### Training Runs
@@ -879,11 +879,11 @@ Status key:
 - [x] Mock worker event emission
 - [x] One active run enforced
 - [x] Run cancellation signaling
-- [~] Progress UI reads mock run events
+- [x] Progress UI reads mock run events
 - [x] Force-kill cancellation fallback
 - [~] Resume from completed step checkpoints
 - [~] Ray-Unsloth import and live training loop
-- [~] LLM judge call for every rollout completion
+- [x] LLM judge call for every rollout completion
 - [x] Group-relative advantage computation
 - [x] `forward_backward_async(..., loss_fn="importance_sampling")`
 - [x] `optim_step_async`

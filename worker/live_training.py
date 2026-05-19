@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import math
 import os
@@ -10,6 +11,7 @@ from typing import Any
 from urllib import request as urlrequest
 
 from scorer import score_style_evidence
+from judge_cache import JudgeCacheInput, JudgeCacheStore
 
 
 @dataclass(frozen=True)
@@ -115,6 +117,10 @@ def post_judge(app_base_url: str, prompt_text: str, completion_text: str, eviden
         return json.loads(response.read().decode("utf-8"))
 
 
+def stable_hash(value: Any) -> str:
+    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+
+
 def policy_loss_summary(loss_fn_outputs: list[dict[str, Any]]) -> tuple[float, float]:
     logprobs: list[float] = []
     ratios: list[float] = []
@@ -138,6 +144,7 @@ async def run_live_training(job: dict[str, Any], emit_event, update_state) -> No
     from ray_unsloth import AdamParams, SamplingParams, ServiceClient
 
     dataset_dir = Path(job["datasetDir"])
+    judge_cache = JudgeCacheStore(Path(job["dataDir"]) / "judge-cache")
     prompts = [
         PromptRecord(
             id=record["id"],
@@ -176,7 +183,23 @@ async def run_live_training(job: dict[str, Any], emit_event, update_state) -> No
                     tokens = list(sequence.tokens)
                     text = sequence.text or tokenizer.decode(tokens, skip_special_tokens=True)
                     evidence = score_style_evidence(text, [record.prompt_text]).to_dict()
-                    judgment = post_judge(job["appBaseUrl"], record.prompt_text, text, evidence)
+                    cache_input = JudgeCacheInput(
+                        prompt_text=record.prompt_text,
+                        completion_text=text,
+                        profile_hash="profile-from-dataset",
+                        rubric_hash="rubric-v1",
+                        reference_excerpt_hashes=record.reference_hashes,
+                        deterministic_evidence_hash=stable_hash(evidence),
+                        judge_provider="mastra",
+                        judge_model="configured-judge",
+                        judge_prompt_version="v1",
+                    )
+                    cached = judge_cache.get(cache_input)
+                    if cached is None:
+                        judgment = post_judge(job["appBaseUrl"], record.prompt_text, text, evidence)
+                        judge_cache.put(cache_input, judgment)
+                    else:
+                        judgment = cached["judgment"]
                     reward = float(judgment["reward"])
                     group_rewards.append(reward)
                     group_payloads.append((sequence, text, reward))
@@ -208,6 +231,7 @@ async def run_live_training(job: dict[str, Any], emit_event, update_state) -> No
                 "reward_min": min(rewards) if rewards else 0.0,
                 "reward_max": max(rewards) if rewards else 0.0,
                 "judge_calls": judge_calls,
+                "judge_cache_hits": judge_cache.hits,
                 "degenerate_group_rate": degenerate_groups / max(len(prompt_records), 1),
                 "policy_mean_logprob": mean_logprob,
                 "policy_mean_ratio": mean_ratio,
@@ -220,6 +244,7 @@ async def run_live_training(job: dict[str, Any], emit_event, update_state) -> No
 
         await training_client.save_sampler_with_download_url_async(name=f"{job['runId']}-final")
         emit_event("eval", int(job["totalSteps"]), "Final live eval placeholder completed.", {"eval_reward_mean": 0.0})
+        Path(job["runDir"], "judge_cache_summary.json").write_text(json.dumps(judge_cache.summary(), indent=2) + "\n", encoding="utf-8")
         update_state(status="completed", finishedAt="now", currentPhase="completed")
     finally:
         service_client.close()
