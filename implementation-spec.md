@@ -892,10 +892,10 @@ Status key:
 
 ### Export And Playground
 
-- [ ] Complete run bundle export
-- [ ] Post-training playground UI
-- [ ] Base model vs trained adapter comparison
-- [ ] Optional saved playground results and delete controls
+- [x] Complete run bundle export
+- [x] Post-training playground UI
+- [x] Base model vs trained adapter comparison
+- [x] Optional saved playground results and delete controls
 
 ### Tests
 

@@ -315,7 +315,8 @@ h3 {
   flex-wrap: wrap;
 }
 
-.workspaceGrid {
+.workspaceGrid,
+.playgroundGrid {
   display: grid;
   gap: 18px;
   grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
@@ -436,13 +437,38 @@ textarea {
   color: var(--red);
 }
 
+.playgroundPanel {
+  border-top: 1px solid var(--line);
+  margin-top: 18px;
+  padding-top: 18px;
+}
+
+.playgroundResult {
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 8px;
+  padding-bottom: 10px;
+}
+
+.playgroundResult:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.playgroundResult button {
+  justify-self: end;
+  min-height: 34px;
+  padding: 0 10px;
+}
+
 @media (max-width: 900px) {
   .topNav,
   .heroBand,
   .contentGrid,
   .pipelineGrid,
   .metricGrid,
-  .workspaceGrid {
+  .workspaceGrid,
+  .playgroundGrid {
     grid-template-columns: 1fr;
   }
 

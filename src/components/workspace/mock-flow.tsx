@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Database, FileText, Play, RefreshCw, Settings, Sparkles } from "lucide-react";
+import { Database, Download, FileText, Play, RefreshCw, Settings, Sparkles, Trash2 } from "lucide-react";
 import type { SetupCheck } from "@/lib/setup/checklist";
 
 type RunState = {
@@ -33,6 +33,16 @@ type ApiRunEvent = {
   metrics?: Record<string, number>;
 };
 
+type PlaygroundResult = {
+  id: string;
+  baseOutput: string;
+  trainedAdapterOutput: string;
+  scoreReport: {
+    baseStyleScore: number;
+    trainedStyleScore: number;
+  };
+};
+
 const sampleText =
   "I write direct updates in short paragraphs. I say what changed and why it matters. I keep the tone warm, plain, and specific. I avoid filler and keep the next action obvious.";
 
@@ -62,6 +72,8 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
   const [ids, setIds] = useState<FlowIds>({});
   const [run, setRun] = useState<RunState | null>(null);
   const [events, setEvents] = useState<ApiRunEvent[]>([]);
+  const [playgroundPrompt, setPlaygroundPrompt] = useState("Rewrite this to sound more like me: Thanks for the update. I will review it and reply soon.");
+  const [playgroundResults, setPlaygroundResults] = useState<PlaygroundResult[]>([]);
   const [sourceType, setSourceType] = useState<"pasted_text" | "txt" | "md" | "pdf" | "docx">("pasted_text");
   const [extractionWarnings, setExtractionWarnings] = useState<string[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
@@ -225,6 +237,34 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
     });
   }
 
+  async function exportRun() {
+    if (!ids.runId) return;
+    await runStep("Exporting run", async () => {
+      const exported = await postJson<{ exportDir: string }>(`/api/runs/${ids.runId}/export`);
+      setMessage(`Run bundle exported to ${exported.exportDir}.`);
+    });
+  }
+
+  async function runPlayground() {
+    await runStep("Running playground", async () => {
+      const result = await postJson<PlaygroundResult>("/api/playground", {
+        prompt: playgroundPrompt,
+        runId: ids.runId,
+      });
+      setPlaygroundResults((current) => [result, ...current]);
+      setMessage("Playground comparison saved.");
+    });
+  }
+
+  async function deletePlayground(id: string) {
+    await runStep("Deleting playground result", async () => {
+      const response = await fetch(`/api/playground/${id}`, { method: "DELETE" });
+      if (!response.ok) throw new Error(await response.text());
+      setPlaygroundResults((current) => current.filter((result) => result.id !== id));
+      setMessage("Playground result deleted.");
+    });
+  }
+
   return (
     <section className="workspacePanel" id="workspace">
       <div className="sectionHeader workspaceHeader">
@@ -288,6 +328,10 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
               <Play aria-hidden="true" />
               Train
             </button>
+            <button type="button" onClick={exportRun} disabled={Boolean(busy) || !ids.runId || run?.status !== "completed"}>
+              <Download aria-hidden="true" />
+              Export
+            </button>
           </div>
         </div>
 
@@ -322,6 +366,38 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
             {check.label}
           </span>
         ))}
+      </div>
+
+      <div className="playgroundPanel">
+        <div className="sectionHeader">
+          <p className="eyebrow">Playground</p>
+          <h2>Base vs adapter mock comparison</h2>
+        </div>
+        <div className="playgroundGrid">
+          <div className="flowEditor">
+            <label htmlFor="playgroundPrompt">Prompt</label>
+            <textarea id="playgroundPrompt" value={playgroundPrompt} onChange={(event) => setPlaygroundPrompt(event.target.value)} rows={4} />
+            <button type="button" className="primaryAction" onClick={runPlayground} disabled={Boolean(busy) || !playgroundPrompt.trim()}>
+              <Sparkles aria-hidden="true" />
+              Compare outputs
+            </button>
+          </div>
+          <div className="eventList">
+            {playgroundResults.length ? (
+              playgroundResults.map((result) => (
+                <div className="playgroundResult" key={result.id}>
+                  <button type="button" aria-label="Delete playground result" onClick={() => void deletePlayground(result.id)} disabled={Boolean(busy)}>
+                    <Trash2 aria-hidden="true" />
+                  </button>
+                  <p><strong>Base {result.scoreReport.baseStyleScore}</strong>: {result.baseOutput}</p>
+                  <p><strong>Adapter {result.scoreReport.trainedStyleScore}</strong>: {result.trainedAdapterOutput}</p>
+                </div>
+              ))
+            ) : (
+              <p>No playground results yet.</p>
+            )}
+          </div>
+        </div>
       </div>
     </section>
   );
