@@ -164,6 +164,15 @@ async def run_live_training(job: dict[str, Any], emit_event, update_state) -> No
         )
         for record in load_jsonl(dataset_dir / "rl_prompts.jsonl")
     ]
+    eval_prompts = [
+        PromptRecord(
+            id=record["id"],
+            task_type=record["taskType"],
+            prompt_text=record["promptText"],
+            reference_hashes=record["selectedReferenceExcerptIds"],
+        )
+        for record in load_jsonl(dataset_dir / "eval_prompts.jsonl")
+    ]
     if not prompts:
         raise ValueError("No training prompts found in dataset.")
 
@@ -175,6 +184,23 @@ async def run_live_training(job: dict[str, Any], emit_event, update_state) -> No
         sampling_params = SamplingParams(max_tokens=256, temperature=0.8, logprobs_max_tokens=256)
         adam_params = AdamParams(learning_rate=4e-5, beta1=0.9, beta2=0.95, max_grad_norm=1.0)
         group_size = int(job.get("groupSize", 4))
+
+        async def run_eval(step: int) -> float:
+            if not eval_prompts:
+                return 0.0
+            eval_rewards: list[float] = []
+            for record in eval_prompts[: min(4, len(eval_prompts))]:
+                prompt = encode_prompt(tokenizer, record.prompt_text)
+                sample_result = await sampler.sample_async(prompt=prompt, num_samples=1, sampling_params=sampling_params)
+                for sequence in sample_result.sequences:
+                    tokens = list(sequence.tokens)
+                    text = sequence.text or tokenizer.decode(tokens, skip_special_tokens=True)
+                    evidence = score_style_evidence(text, [record.prompt_text]).to_dict()
+                    judgment = post_judge(job["appBaseUrl"], record.prompt_text, text, evidence)
+                    eval_rewards.append(float(judgment["reward"]))
+            mean_eval = sum(eval_rewards) / len(eval_rewards) if eval_rewards else 0.0
+            emit_event("eval", step, "Held-out eval prompts judged.", {"eval_reward_mean": mean_eval, "eval_prompt_count": len(eval_rewards)})
+            return mean_eval
 
         start_step = load_completed_step(Path(job["runDir"])) + 1
         for step in range(start_step, int(job["totalSteps"]) + 1):
@@ -252,10 +278,10 @@ async def run_live_training(job: dict[str, Any], emit_event, update_state) -> No
             if step % int(job["checkpointInterval"]) == 0:
                 await training_client.save_sampler_with_download_url_async(name=f"{job['runId']}-step-{step}")
                 emit_event("checkpointing", step, "Live checkpoint saved.", {"checkpoint_step": step})
-                emit_event("eval", step, "Periodic live eval placeholder completed.", {"eval_reward_mean": reward_mean})
+                await run_eval(step)
 
         await training_client.save_sampler_with_download_url_async(name=f"{job['runId']}-final")
-        emit_event("eval", int(job["totalSteps"]), "Final live eval placeholder completed.", {"eval_reward_mean": 0.0})
+        await run_eval(int(job["totalSteps"]))
         Path(job["runDir"], "judge_cache_summary.json").write_text(json.dumps(judge_cache.summary(), indent=2) + "\n", encoding="utf-8")
         update_state(status="completed", finishedAt="now", currentPhase="completed")
     finally:

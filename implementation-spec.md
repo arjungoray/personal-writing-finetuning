@@ -888,7 +888,7 @@ Status key:
 - [x] `forward_backward_async(..., loss_fn="importance_sampling")`
 - [x] `optim_step_async`
 - [x] Real checkpoint save interval
-- [~] Periodic and final eval against held-out prompts
+- [x] Periodic and final eval against held-out prompts
 
 ### Export And Playground
 

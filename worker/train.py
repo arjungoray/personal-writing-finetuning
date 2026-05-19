@@ -109,6 +109,14 @@ def run_mock_training(job: dict) -> None:
                 "mock": True,
                 "savedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             })
+            append_event(run_dir, {
+                "runId": job["runId"],
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "phase": "eval",
+                "step": step,
+                "message": "Mock periodic eval completed.",
+                "metrics": {"eval_reward_mean": round(statistics.mean(rewards), 6)},
+            })
         state = update_state(
             run_dir,
             state,
