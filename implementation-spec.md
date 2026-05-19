@@ -857,8 +857,8 @@ Status key:
 - [x] Train/eval JSONL artifacts
 - [x] Default task mix
 - [x] Dataset approval API
-- [ ] Dataset review UI by task type
-- [ ] Bulk approve/regenerate/delete selected records
+- [~] Dataset review UI by task type
+- [x] Bulk approve/regenerate/delete selected records
 - [ ] Live Gemini/Mastra dataset generation
 
 ### Reward Design And Judge

@@ -2,10 +2,10 @@ import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { z } from "zod";
 import { generateMockDatasetRecords, defaultPromptMix } from "@/lib/ai/mock/dataset";
-import { DatasetMetadataSchema, DatasetPromptRecordSchema, type DatasetMetadata } from "@/lib/datasets/types";
+import { DatasetMetadataSchema, DatasetPromptRecordSchema, type DatasetMetadata, type DatasetPromptRecord } from "@/lib/datasets/types";
 import { emptyIndex, initializeDataDirectory, type VoiceLabIndex } from "@/lib/store/init";
 import { readJsonFile, writeJsonFile } from "@/lib/store/json";
-import { writeJsonlFile } from "@/lib/store/jsonl";
+import { readJsonlFile, writeJsonlFile } from "@/lib/store/jsonl";
 import { getDataSubdirectoryPath, getIndexPath } from "@/lib/store/paths";
 import { readSettings } from "@/lib/store/settings";
 import { readProfile } from "@/lib/profiles/store";
@@ -19,6 +19,14 @@ export const GenerateDatasetRequestSchema = z.object({
 
 function datasetDir(id: string) {
   return join(getDataSubdirectoryPath("datasets"), id);
+}
+
+function trainPromptsPath(id: string) {
+  return join(datasetDir(id), "rl_prompts.jsonl");
+}
+
+function evalPromptsPath(id: string) {
+  return join(datasetDir(id), "eval_prompts.jsonl");
 }
 
 export async function listDatasets(): Promise<DatasetMetadata[]> {
@@ -71,8 +79,8 @@ export async function generateDataset(input: z.infer<typeof GenerateDatasetReque
   });
 
   await mkdir(datasetDir(id), { recursive: true });
-  await writeJsonlFile(join(datasetDir(id), "rl_prompts.jsonl"), train);
-  await writeJsonlFile(join(datasetDir(id), "eval_prompts.jsonl"), evalRecords);
+  await writeJsonlFile(trainPromptsPath(id), train);
+  await writeJsonlFile(evalPromptsPath(id), evalRecords);
   await writeJsonFile(join(datasetDir(id), "metadata.json"), metadata);
 
   const index = await readJsonFile<VoiceLabIndex>(getIndexPath(), emptyIndex);
@@ -90,4 +98,45 @@ export async function approveDataset(id: string): Promise<DatasetMetadata> {
   const approved = DatasetMetadataSchema.parse({ ...current, status: "approved" });
   await writeJsonFile(metadataPath, approved);
   return approved;
+}
+
+export async function listDatasetRecords(id: string): Promise<DatasetPromptRecord[]> {
+  const train = await readJsonlFile<DatasetPromptRecord>(trainPromptsPath(id));
+  const evalRecords = await readJsonlFile<DatasetPromptRecord>(evalPromptsPath(id));
+  return [...train, ...evalRecords];
+}
+
+async function writeDatasetRecords(id: string, records: DatasetPromptRecord[]) {
+  await writeJsonlFile(trainPromptsPath(id), records.filter((record) => record.split === "train"));
+  await writeJsonlFile(evalPromptsPath(id), records.filter((record) => record.split === "eval"));
+}
+
+export async function bulkApproveDatasetRecords(id: string, recordIds?: string[]) {
+  const selected = new Set(recordIds);
+  const approveAll = !recordIds || recordIds.length === 0;
+  const records = (await listDatasetRecords(id)).map((record) =>
+    approveAll || selected.has(record.id) ? { ...record, approved: true } : record,
+  );
+  await writeDatasetRecords(id, records);
+  return { records };
+}
+
+export async function deleteDatasetRecord(id: string, recordId: string) {
+  const records = (await listDatasetRecords(id)).filter((record) => record.id !== recordId);
+  await writeDatasetRecords(id, records);
+  return { records };
+}
+
+export async function regenerateDatasetRecord(id: string, recordId: string) {
+  const records = (await listDatasetRecords(id)).map((record) =>
+    record.id === recordId
+      ? {
+          ...record,
+          promptText: `${record.promptText}\n\nRegenerated variant: preserve the same task while changing surface wording.`,
+          approved: false,
+        }
+      : record,
+  );
+  await writeDatasetRecords(id, records);
+  return { records };
 }
