@@ -8,6 +8,7 @@ import statistics
 import time
 
 from judge_cache import JudgeCacheInput, JudgeCacheStore
+from live_training import run_live_training
 
 
 def write_json(path: Path, value: dict) -> None:
@@ -23,6 +24,8 @@ def append_event(run_dir: Path, event: dict) -> None:
 
 
 def update_state(run_dir: Path, state: dict, **updates: object) -> dict:
+    if updates.get("finishedAt") == "now":
+        updates["finishedAt"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     next_state = {**state, **updates}
     write_json(run_dir / "run_state.json", next_state)
     return next_state
@@ -138,7 +141,33 @@ def main() -> None:
     parser.add_argument("--job", required=True)
     args = parser.parse_args()
     job = json.loads(Path(args.job).read_text(encoding="utf-8"))
-    run_mock_training(job)
+    if job.get("mockMode", True):
+        run_mock_training(job)
+    else:
+        run_dir = Path(job["runDir"])
+        state = json.loads((run_dir / "run_state.json").read_text(encoding="utf-8"))
+
+        def emit_event(phase: str, step: int, message: str, metrics: dict) -> None:
+            append_event(run_dir, {
+                "runId": job["runId"],
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "phase": phase,
+                "step": step,
+                "message": message,
+                "metrics": metrics,
+            })
+
+        def update_live_state(**updates: object) -> dict:
+            nonlocal state
+            state = update_state(run_dir, state, **updates)
+            return state
+
+        try:
+            asyncio_run = __import__("asyncio").run
+            asyncio_run(run_live_training(job, emit_event, update_live_state))
+        except Exception as error:
+            update_live_state(status="failed", finishedAt="now", currentPhase="failed", error=str(error))
+            raise
 
 
 if __name__ == "__main__":

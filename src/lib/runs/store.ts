@@ -17,6 +17,10 @@ export const StartRunRequestSchema = z.object({
   mockMode: z.boolean().default(true),
 });
 
+export type StartRunInput = z.infer<typeof StartRunRequestSchema> & {
+  appBaseUrl?: string;
+};
+
 function runDir(id: string) {
   return join(getDataSubdirectoryPath("runs"), id);
 }
@@ -54,7 +58,7 @@ async function assertNoActiveRun() {
   }
 }
 
-export async function startRun(input: z.infer<typeof StartRunRequestSchema>): Promise<RunState> {
+export async function startRun(input: StartRunInput): Promise<RunState> {
   await initializeDataDirectory();
   await assertNoActiveRun();
   const settings = await readSettings();
@@ -62,10 +66,6 @@ export async function startRun(input: z.infer<typeof StartRunRequestSchema>): Pr
   if (dataset.status !== "approved") {
     throw new Error("Training requires an approved dataset version.");
   }
-  if (!input.mockMode) {
-    throw new Error("Live Ray-Unsloth training is not wired in this stack layer yet; use mockMode.");
-  }
-
   const id = `run_${Date.now()}_${randomUUID().slice(0, 8)}`;
   const dir = runDir(id);
   await mkdir(dir, { recursive: true });
@@ -97,6 +97,9 @@ export async function startRun(input: z.infer<typeof StartRunRequestSchema>): Pr
     checkpointInterval: settings.checkpointInterval,
     trainingSeed: settings.trainingSeed,
     mockMode: input.mockMode,
+    appBaseUrl: input.appBaseUrl,
+    rayUnslothPath: settings.rayUnslothPath,
+    configPath: join(settings.rayUnslothPath, "configs", "qwen3_5_4b_1x_l4.yaml"),
   });
 
   const child = spawn("python3", ["worker/train.py", "--job", relative(process.cwd(), jobPath)], {

@@ -7,5 +7,5 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const input = StartRunRequestSchema.parse(await request.json());
-  return NextResponse.json(await startRun(input), { status: 201 });
+  return NextResponse.json(await startRun({ ...input, appBaseUrl: new URL(request.url).origin }), { status: 201 });
 }
