@@ -350,6 +350,29 @@ input[type="file"] {
   background: #fff;
 }
 
+input[type="checkbox"] {
+  width: auto;
+}
+
+.settingsStrip {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.settingsStrip label {
+  align-items: center;
+  background: #f8faf8;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  display: inline-flex;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 10px;
+}
+
 textarea {
   resize: vertical;
 }

@@ -76,6 +76,8 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
   const [playgroundResults, setPlaygroundResults] = useState<PlaygroundResult[]>([]);
   const [sourceType, setSourceType] = useState<"pasted_text" | "txt" | "md" | "pdf" | "docx">("pasted_text");
   const [extractionWarnings, setExtractionWarnings] = useState<string[]>([]);
+  const [mockMode, setMockMode] = useState(true);
+  const [smallSampleOverride, setSmallSampleOverride] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState("Ready for mock mode.");
   const [error, setError] = useState<string | null>(null);
@@ -107,9 +109,26 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
 
   async function loadSettings() {
     await runStep("Validating settings", async () => {
-      const settings = await getJson<{ generatorModel: string; judgeModel: string; rayUnslothPath: string }>("/api/settings");
+      const settings = await getJson<{ generatorModel: string; judgeModel: string; rayUnslothPath: string; mockMode: boolean; smallSampleOverride: boolean }>("/api/settings");
+      setMockMode(settings.mockMode);
+      setSmallSampleOverride(settings.smallSampleOverride);
       const validation = await postJson<{ ok: boolean; mockMode: boolean; message?: string }>("/api/settings/validate");
       setMessage(`${validation.ok ? "Validated" : "Validation failed"}: generator ${settings.generatorModel}; judge ${settings.judgeModel}; ${validation.message ?? settings.rayUnslothPath}.`);
+    });
+  }
+
+  async function updateSettingPatch(patch: { mockMode?: boolean; smallSampleOverride?: boolean }) {
+    await runStep("Saving settings", async () => {
+      const response = await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      if (!response.ok) throw new Error(await response.text());
+      const settings = await response.json() as { mockMode: boolean; smallSampleOverride: boolean };
+      setMockMode(settings.mockMode);
+      setSmallSampleOverride(settings.smallSampleOverride);
+      setMessage("Settings saved.");
     });
   }
 
@@ -291,6 +310,24 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
 
       <div className="workspaceGrid">
         <div className="flowEditor">
+          <div className="settingsStrip">
+            <label>
+              <input
+                type="checkbox"
+                checked={mockMode}
+                onChange={(event) => void updateSettingPatch({ mockMode: event.currentTarget.checked })}
+              />
+              Mock mode
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={smallSampleOverride}
+                onChange={(event) => void updateSettingPatch({ smallSampleOverride: event.currentTarget.checked })}
+              />
+              Small-sample override
+            </label>
+          </div>
           <label htmlFor="writingUpload">Upload sample</label>
           <input
             id="writingUpload"
