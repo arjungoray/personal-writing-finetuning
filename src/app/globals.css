@@ -1,0 +1,307 @@
+:root {
+  color-scheme: light;
+  --bg: #f5f7f4;
+  --ink: #16201c;
+  --muted: #66736c;
+  --line: #d7ded7;
+  --panel: #ffffff;
+  --accent: #0e6b5f;
+  --accent-strong: #074a42;
+  --amber: #a86500;
+  --red: #b3322a;
+  --blue: #305f9f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+button,
+a {
+  color: inherit;
+}
+
+button {
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 14px;
+}
+
+button svg,
+.pipelineItem svg,
+.metricTile svg,
+.checkIcon svg {
+  height: 18px;
+  width: 18px;
+}
+
+.appShell {
+  margin: 0 auto;
+  max-width: 1180px;
+  padding: 28px;
+}
+
+.topNav,
+.heroBand,
+.contentGrid,
+.pipelineGrid,
+.metricGrid {
+  display: grid;
+  gap: 18px;
+}
+
+.topNav {
+  align-items: center;
+  grid-template-columns: 1fr auto;
+  margin-bottom: 24px;
+}
+
+.brandKicker,
+.eyebrow {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin: 0 0 6px;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  font-size: 1.4rem;
+  margin-bottom: 0;
+}
+
+h2 {
+  font-size: clamp(1.5rem, 3vw, 2.7rem);
+  line-height: 1.08;
+  margin-bottom: 12px;
+}
+
+h3 {
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+.navActions {
+  display: flex;
+  gap: 10px;
+}
+
+.primaryAction {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.heroBand {
+  align-items: stretch;
+  background:
+    linear-gradient(135deg, rgba(14, 107, 95, 0.12), rgba(48, 95, 159, 0.1)),
+    var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  margin-bottom: 18px;
+  padding: 28px;
+}
+
+.heroCopy p:last-child {
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1.6;
+  max-width: 760px;
+}
+
+.modelPanel,
+.panel,
+.pipelineItem {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.modelPanel {
+  align-self: stretch;
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+
+.modelRow,
+.rateRow,
+.checkRow {
+  align-items: center;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr auto;
+}
+
+.modelRow span,
+.rateRow span,
+.checkDetail,
+.finePrint,
+.pipelineItem p {
+  color: var(--muted);
+}
+
+.pipelineGrid {
+  grid-template-columns: repeat(4, 1fr);
+  margin-bottom: 18px;
+}
+
+.pipelineItem {
+  min-height: 156px;
+  padding: 18px;
+}
+
+.pipelineItem svg {
+  color: var(--accent);
+  margin-bottom: 18px;
+}
+
+.contentGrid {
+  align-items: start;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  margin-bottom: 18px;
+}
+
+.panel {
+  padding: 20px;
+}
+
+.sectionHeader h2 {
+  font-size: 1.25rem;
+  margin-bottom: 16px;
+}
+
+.checkList,
+.rateList {
+  display: grid;
+  gap: 12px;
+}
+
+.checkRow {
+  grid-template-columns: auto 1fr;
+}
+
+.checkIcon {
+  align-items: center;
+  border-radius: 8px;
+  display: inline-flex;
+  height: 36px;
+  justify-content: center;
+  width: 36px;
+}
+
+.statusReady {
+  background: rgba(14, 107, 95, 0.12);
+  color: var(--accent);
+}
+
+.statusMissing {
+  background: rgba(179, 50, 42, 0.12);
+  color: var(--red);
+}
+
+.statusAvailable {
+  background: rgba(48, 95, 159, 0.12);
+  color: var(--blue);
+}
+
+.checkLabel {
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+
+.checkDetail,
+.finePrint {
+  font-size: 0.9rem;
+  line-height: 1.45;
+  margin-bottom: 0;
+}
+
+.rateRow {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+}
+
+.rateRow:last-child {
+  border-bottom: 0;
+}
+
+.finePrint {
+  margin-top: 18px;
+}
+
+.metricGrid {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.metricTile {
+  background: #f8faf8;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  min-height: 116px;
+  padding: 14px;
+}
+
+.metricTile svg {
+  color: var(--amber);
+}
+
+.metricTile span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 900px) {
+  .topNav,
+  .heroBand,
+  .contentGrid,
+  .pipelineGrid,
+  .metricGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .navActions {
+    justify-content: start;
+  }
+}
+
+@media (max-width: 560px) {
+  .appShell {
+    padding: 18px;
+  }
+
+  .topNav {
+    align-items: start;
+  }
+
+  .navActions {
+    flex-wrap: wrap;
+  }
+}
