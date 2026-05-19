@@ -43,6 +43,14 @@ type PlaygroundResult = {
   };
 };
 
+type DatasetRecord = {
+  id: string;
+  split: "train" | "eval";
+  taskType: string;
+  promptText: string;
+  approved: boolean;
+};
+
 const sampleText =
   "I write direct updates in short paragraphs. I say what changed and why it matters. I keep the tone warm, plain, and specific. I avoid filler and keep the next action obvious.";
 
@@ -74,6 +82,7 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
   const [events, setEvents] = useState<ApiRunEvent[]>([]);
   const [playgroundPrompt, setPlaygroundPrompt] = useState("Rewrite this to sound more like me: Thanks for the update. I will review it and reply soon.");
   const [playgroundResults, setPlaygroundResults] = useState<PlaygroundResult[]>([]);
+  const [datasetRecords, setDatasetRecords] = useState<DatasetRecord[]>([]);
   const [sourceType, setSourceType] = useState<"pasted_text" | "txt" | "md" | "pdf" | "docx">("pasted_text");
   const [extractionWarnings, setExtractionWarnings] = useState<string[]>([]);
   const [mockMode, setMockMode] = useState(true);
@@ -191,6 +200,8 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
         seed: 9,
       });
       await postJson(`/api/datasets/${dataset.id}/approve`);
+      const recordsPayload = await getJson<{ records: DatasetRecord[] }>(`/api/datasets/${dataset.id}/records`);
+      setDatasetRecords(recordsPayload.records);
       setIds((current) => ({ ...current, datasetId: dataset.id }));
       setMessage("Mock dataset generated and approved.");
     });
@@ -251,6 +262,8 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
         mockMode: true,
       });
       setIds({ writingId: writing.id, profileId: profile.id, datasetId: dataset.id, runId: nextRun.id });
+      const recordsPayload = await getJson<{ records: DatasetRecord[] }>(`/api/datasets/${dataset.id}/records`);
+      setDatasetRecords(recordsPayload.records);
       setRun(nextRun);
       setMessage("Full mock flow started.");
       await pollRun(nextRun.id);
@@ -282,6 +295,33 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
       if (!response.ok) throw new Error(await response.text());
       setPlaygroundResults((current) => current.filter((result) => result.id !== id));
       setMessage("Playground result deleted.");
+    });
+  }
+
+  async function bulkApproveRecords() {
+    if (!ids.datasetId) return;
+    await runStep("Approving records", async () => {
+      const payload = await postJson<{ records: DatasetRecord[] }>(`/api/datasets/${ids.datasetId}/records/bulk-approve`, {});
+      setDatasetRecords(payload.records);
+      setMessage("Dataset records approved.");
+    });
+  }
+
+  async function regenerateRecord(recordId: string) {
+    if (!ids.datasetId) return;
+    await runStep("Regenerating record", async () => {
+      const payload = await postJson<{ records: DatasetRecord[] }>(`/api/datasets/${ids.datasetId}/records/${recordId}/regenerate`);
+      setDatasetRecords(payload.records);
+      setMessage("Dataset record regenerated.");
+    });
+  }
+
+  async function deleteRecord(recordId: string) {
+    if (!ids.datasetId) return;
+    await runStep("Deleting record", async () => {
+      const payload = await postJson<{ records: DatasetRecord[] }>(`/api/datasets/${ids.datasetId}/records/${recordId}/delete`);
+      setDatasetRecords(payload.records);
+      setMessage("Dataset record deleted.");
     });
   }
 
@@ -404,6 +444,42 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
             {check.label}
           </span>
         ))}
+      </div>
+
+      <div className="datasetReviewPanel">
+        <div className="sectionHeader reviewHeader">
+          <div>
+            <p className="eyebrow">Dataset review</p>
+            <h2>Prompt records</h2>
+          </div>
+          <button type="button" onClick={bulkApproveRecords} disabled={Boolean(busy) || !datasetRecords.length}>
+            <Database aria-hidden="true" />
+            Bulk approve
+          </button>
+        </div>
+        <div className="recordList">
+          {datasetRecords.length ? (
+            datasetRecords.slice(0, 8).map((record) => (
+              <div className="recordRow" key={record.id}>
+                <div>
+                  <strong>{record.taskType}</strong>
+                  <span>{record.split} · {record.approved ? "approved" : "pending"}</span>
+                  <p>{record.promptText}</p>
+                </div>
+                <div className="recordActions">
+                  <button type="button" onClick={() => void regenerateRecord(record.id)} disabled={Boolean(busy)}>
+                    <RefreshCw aria-hidden="true" />
+                  </button>
+                  <button type="button" onClick={() => void deleteRecord(record.id)} disabled={Boolean(busy)}>
+                    <Trash2 aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="finePrint">Generate a dataset to inspect prompt records.</p>
+          )}
+        </div>
       </div>
 
       <div className="playgroundPanel">

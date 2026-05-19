@@ -460,10 +460,58 @@ textarea {
   color: var(--red);
 }
 
-.playgroundPanel {
+.playgroundPanel,
+.datasetReviewPanel {
   border-top: 1px solid var(--line);
   margin-top: 18px;
   padding-top: 18px;
+}
+
+.reviewHeader {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.recordList {
+  display: grid;
+  gap: 10px;
+}
+
+.recordRow {
+  align-items: start;
+  background: #f8faf8;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr auto;
+  padding: 12px;
+}
+
+.recordRow span {
+  color: var(--muted);
+  display: block;
+  font-size: 0.8rem;
+  margin-top: 2px;
+}
+
+.recordRow p {
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.35;
+  margin: 8px 0 0;
+}
+
+.recordActions {
+  display: flex;
+  gap: 8px;
+}
+
+.recordActions button {
+  min-height: 34px;
+  padding: 0 10px;
 }
 
 .playgroundResult {
