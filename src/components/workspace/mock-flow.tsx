@@ -19,6 +19,13 @@ type FlowIds = {
   runId?: string;
 };
 
+type ExtractedUpload = {
+  fileName: string;
+  sourceType: "txt" | "md" | "pdf" | "docx";
+  text: string;
+  warnings: string[];
+};
+
 type ApiRunEvent = {
   phase: string;
   step: number;
@@ -55,6 +62,8 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
   const [ids, setIds] = useState<FlowIds>({});
   const [run, setRun] = useState<RunState | null>(null);
   const [events, setEvents] = useState<ApiRunEvent[]>([]);
+  const [sourceType, setSourceType] = useState<"pasted_text" | "txt" | "md" | "pdf" | "docx">("pasted_text");
+  const [extractionWarnings, setExtractionWarnings] = useState<string[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState("Ready for mock mode.");
   const [error, setError] = useState<string | null>(null);
@@ -95,12 +104,33 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
     await runStep("Saving writing", async () => {
       const writing = await postJson<{ id: string }>("/api/writings", {
         title: "Mock writing sample",
-        sourceType: "pasted_text",
+        sourceType,
         text,
         modeTags: ["casual_message"],
+        extractionWarnings,
       });
       setIds((current) => ({ ...current, writingId: writing.id }));
       setMessage("Writing sample saved.");
+    });
+  }
+
+  async function extractUpload(file: File | null) {
+    if (!file) return;
+    await runStep("Extracting upload", async () => {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/uploads/extract", {
+        method: "POST",
+        body: formData,
+      });
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+      const extracted = (await response.json()) as ExtractedUpload;
+      setText(extracted.text);
+      setSourceType(extracted.sourceType);
+      setExtractionWarnings(extracted.warnings);
+      setMessage(`Extracted ${extracted.fileName}${extracted.warnings.length ? ` with ${extracted.warnings.length} warning(s).` : "."}`);
     });
   }
 
@@ -220,6 +250,23 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
 
       <div className="workspaceGrid">
         <div className="flowEditor">
+          <label htmlFor="writingUpload">Upload sample</label>
+          <input
+            id="writingUpload"
+            type="file"
+            accept=".txt,.md,.pdf,.docx"
+            onChange={(event) => {
+              void extractUpload(event.target.files?.[0] ?? null);
+              event.currentTarget.value = "";
+            }}
+          />
+          {extractionWarnings.length ? (
+            <div className="warningBox">
+              {extractionWarnings.map((warning) => (
+                <p key={warning}>{warning}</p>
+              ))}
+            </div>
+          ) : null}
           <label htmlFor="writingText">Writing sample</label>
           <textarea id="writingText" value={text} onChange={(event) => setText(event.target.value)} rows={7} />
           <label htmlFor="directiveText">Style directive</label>

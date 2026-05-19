@@ -827,9 +827,9 @@ Status key:
 - [~] `.txt` and `.md` extraction helper in Python worker
 - [~] PDF accessible-text extraction helper in Python worker
 - [~] DOCX readable-text extraction helper in Python worker
-- [ ] Browser upload UI for txt/md/pdf/docx
-- [ ] Extraction API route that stores uploads and warnings
-- [ ] User review/edit screen before style profile generation
+- [x] Browser upload UI for txt/md/pdf/docx
+- [x] Extraction API route that stores uploads and warnings
+- [x] User review/edit screen before style profile generation
 
 ### Corpus Policy
 
