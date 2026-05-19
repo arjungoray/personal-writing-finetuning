@@ -27,6 +27,7 @@ export async function generateDatasetRecordsWithMastra(params: {
 
   const response = await generateGeminiText({
     settings: params.settings,
+    kind: "generator",
     model: params.settings.generatorModel,
     system: "You generate RL prompt datasets as strict JSON arrays only. Do not include reference excerpts in promptText.",
     prompt: JSON.stringify({

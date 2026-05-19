@@ -98,6 +98,7 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
   const [playgroundResults, setPlaygroundResults] = useState<PlaygroundResult[]>([]);
   const [datasetRecords, setDatasetRecords] = useState<DatasetRecord[]>([]);
   const [profile, setProfile] = useState<StyleProfile | null>(null);
+  const [usageTotals, setUsageTotals] = useState<{ totalTokens: number; generatorCalls: number; judgeCalls: number } | null>(null);
   const [sourceType, setSourceType] = useState<"pasted_text" | "txt" | "md" | "pdf" | "docx">("pasted_text");
   const [extractionWarnings, setExtractionWarnings] = useState<string[]>([]);
   const [mockMode, setMockMode] = useState(true);
@@ -134,6 +135,8 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
   async function loadSettings() {
     await runStep("Validating settings", async () => {
       const settings = await getJson<{ generatorModel: string; judgeModel: string; rayUnslothPath: string; mockMode: boolean; smallSampleOverride: boolean }>("/api/settings");
+      const usage = await getJson<{ totals: { totalTokens: number; generatorCalls: number; judgeCalls: number } }>("/api/usage");
+      setUsageTotals(usage.totals);
       setMockMode(settings.mockMode);
       setSmallSampleOverride(settings.smallSampleOverride);
       const validation = await postJson<{ ok: boolean; mockMode: boolean; message?: string }>("/api/settings/validate");
@@ -463,6 +466,7 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
             <span>Profile: {ids.profileId ?? "not created"}</span>
             <span>Dataset: {ids.datasetId ?? "not created"}</span>
             <span>Run: {ids.runId ?? "not started"}</span>
+            <span>AI usage: {usageTotals ? `${usageTotals.totalTokens} tokens · ${usageTotals.generatorCalls} generator · ${usageTotals.judgeCalls} judge` : "not loaded"}</span>
           </div>
           <div className="runBox">
             <strong>{run ? `${run.status} · ${run.currentPhase}` : "No active run"}</strong>

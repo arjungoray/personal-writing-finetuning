@@ -1,6 +1,7 @@
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import type { Settings } from "@/lib/store/settings";
+import { recordAiUsage } from "@/lib/usage/store";
 
 export type AiUsage = {
   inputTokens: number;
@@ -30,6 +31,7 @@ function normalizeUsage(usage: unknown): AiUsage {
 
 export async function generateGeminiText(params: {
   settings: Settings;
+  kind: "generator" | "judge";
   model: string;
   system: string;
   prompt: string;
@@ -41,9 +43,16 @@ export async function generateGeminiText(params: {
     prompt: params.prompt,
   });
 
+  const usage = normalizeUsage(result.usage);
+  await recordAiUsage({
+    kind: params.kind,
+    model: params.model,
+    ...usage,
+  });
+
   return {
     text: result.text,
-    usage: normalizeUsage(result.usage),
+    usage,
     model: params.model,
   };
 }
@@ -52,6 +61,7 @@ export async function validateGeminiSettings(settings: Settings) {
   requireGeminiKey();
   const result = await generateGeminiText({
     settings,
+    kind: "generator",
     model: settings.generatorModel,
     system: "You validate model connectivity. Reply with exactly OK.",
     prompt: "Reply with OK.",

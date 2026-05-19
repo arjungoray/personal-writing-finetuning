@@ -39,6 +39,7 @@ export async function judgeCompletionWithMastra(params: {
 
   const response = await generateGeminiText({
     settings: params.settings,
+    kind: "judge",
     model: params.settings.judgeModel,
     system: "You are an LLM judge. Return strict JSON matching the requested schema.",
     prompt: JSON.stringify({

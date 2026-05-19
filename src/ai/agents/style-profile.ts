@@ -21,6 +21,7 @@ export async function generateStyleProfileWithMastra(params: {
 
   const response = await generateGeminiText({
     settings: params.settings,
+    kind: "generator",
     model: params.settings.generatorModel,
     system: "You generate editable writing style profiles as strict JSON only.",
     prompt: JSON.stringify({

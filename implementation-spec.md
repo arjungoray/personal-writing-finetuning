@@ -870,7 +870,7 @@ Status key:
 - [x] Persistent judge cache records
 - [~] Live Gemini/Mastra LLM judge
 - [~] Structured judgment records for every sampled completion
-- [~] Token usage accounting
+- [x] Token usage accounting
 
 ### Training Runs
 
