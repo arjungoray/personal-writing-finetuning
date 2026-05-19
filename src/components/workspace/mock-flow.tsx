@@ -51,6 +51,20 @@ type DatasetRecord = {
   approved: boolean;
 };
 
+type StyleProfile = {
+  id: string;
+  version: number;
+  hash: string;
+  analytic: {
+    readability: string;
+    diction: string;
+  };
+  coachingRules: {
+    prefer: string[];
+    avoid: string[];
+  };
+};
+
 const sampleText =
   "I write direct updates in short paragraphs. I say what changed and why it matters. I keep the tone warm, plain, and specific. I avoid filler and keep the next action obvious.";
 
@@ -83,6 +97,7 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
   const [playgroundPrompt, setPlaygroundPrompt] = useState("Rewrite this to sound more like me: Thanks for the update. I will review it and reply soon.");
   const [playgroundResults, setPlaygroundResults] = useState<PlaygroundResult[]>([]);
   const [datasetRecords, setDatasetRecords] = useState<DatasetRecord[]>([]);
+  const [profile, setProfile] = useState<StyleProfile | null>(null);
   const [sourceType, setSourceType] = useState<"pasted_text" | "txt" | "md" | "pdf" | "docx">("pasted_text");
   const [extractionWarnings, setExtractionWarnings] = useState<string[]>([]);
   const [mockMode, setMockMode] = useState(true);
@@ -186,6 +201,8 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
         },
       );
       await postJson(`/api/profiles/${profile.id}/approve`);
+      const approvedProfile = await getJson<StyleProfile>(`/api/profiles/${profile.id}`);
+      setProfile(approvedProfile);
       setIds((current) => ({ ...current, profileId: profile.id }));
       setMessage("Mock style profile generated and approved.");
     });
@@ -263,6 +280,8 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
       });
       setIds({ writingId: writing.id, profileId: profile.id, datasetId: dataset.id, runId: nextRun.id });
       const recordsPayload = await getJson<{ records: DatasetRecord[] }>(`/api/datasets/${dataset.id}/records`);
+      const approvedProfile = await getJson<StyleProfile>(`/api/profiles/${profile.id}`);
+      setProfile(approvedProfile);
       setDatasetRecords(recordsPayload.records);
       setRun(nextRun);
       setMessage("Full mock flow started.");
@@ -322,6 +341,29 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
       const payload = await postJson<{ records: DatasetRecord[] }>(`/api/datasets/${ids.datasetId}/records/${recordId}/delete`);
       setDatasetRecords(payload.records);
       setMessage("Dataset record deleted.");
+    });
+  }
+
+  async function saveProfilePatch(patch: Partial<StyleProfile>) {
+    if (!profile) return;
+    await runStep("Saving profile", async () => {
+      const response = await fetch(`/api/profiles/${profile.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      if (!response.ok) throw new Error(await response.text());
+      setProfile(await response.json() as StyleProfile);
+      setMessage("Profile saved and rehashed.");
+    });
+  }
+
+  async function regenerateProfileSection(section: "analytic" | "coachingRules") {
+    if (!profile) return;
+    await runStep("Regenerating profile", async () => {
+      const next = await postJson<StyleProfile>(`/api/profiles/${profile.id}/regenerate`, { section });
+      setProfile(next);
+      setMessage(`${section} regenerated.`);
     });
   }
 
@@ -444,6 +486,53 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
             {check.label}
           </span>
         ))}
+      </div>
+
+      <div className="profileEditorPanel">
+        <div className="sectionHeader reviewHeader">
+          <div>
+            <p className="eyebrow">Style profile</p>
+            <h2>Editable profile</h2>
+          </div>
+          {profile ? <span className="profileHash">v{profile.version} · {profile.hash.slice(0, 10)}</span> : null}
+        </div>
+        {profile ? (
+          <div className="profileEditorGrid">
+            <div className="flowEditor">
+              <label htmlFor="profileReadability">Analytic readability</label>
+              <textarea
+                id="profileReadability"
+                value={profile.analytic.readability}
+                rows={3}
+                onChange={(event) => setProfile({ ...profile, analytic: { ...profile.analytic, readability: event.target.value } })}
+              />
+              <button type="button" onClick={() => void regenerateProfileSection("analytic")} disabled={Boolean(busy)}>
+                <RefreshCw aria-hidden="true" />
+                Regenerate analytic
+              </button>
+            </div>
+            <div className="flowEditor">
+              <label htmlFor="profilePrefer">Preferred rules</label>
+              <textarea
+                id="profilePrefer"
+                value={profile.coachingRules.prefer.join("\n")}
+                rows={3}
+                onChange={(event) => setProfile({ ...profile, coachingRules: { ...profile.coachingRules, prefer: event.target.value.split("\n").filter(Boolean) } })}
+              />
+              <div className="stepButtons">
+                <button type="button" onClick={() => void regenerateProfileSection("coachingRules")} disabled={Boolean(busy)}>
+                  <RefreshCw aria-hidden="true" />
+                  Regenerate rules
+                </button>
+                <button type="button" className="primaryAction" onClick={() => void saveProfilePatch({ analytic: profile.analytic, coachingRules: profile.coachingRules })} disabled={Boolean(busy)}>
+                  Save profile
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="finePrint">Generate a profile to edit analytic traits and coaching rules.</p>
+        )}
       </div>
 
       <div className="datasetReviewPanel">

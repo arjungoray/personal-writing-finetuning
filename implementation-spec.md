@@ -846,8 +846,8 @@ Status key:
 - [x] User directives stored separately in profile artifact
 - [x] Profile hash/version metadata
 - [x] Profile approval API
-- [ ] Profile edit UI
-- [ ] Per-section regeneration UI
+- [x] Profile edit UI
+- [x] Per-section regeneration UI
 - [x] Live Gemini/Mastra profile generation
 
 ### Dataset Generation And Review
