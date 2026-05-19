@@ -824,9 +824,9 @@ Status key:
 ### Writing Inputs And Extraction
 
 - [x] Pasted-text writing sample creation
-- [~] `.txt` and `.md` extraction helper in Python worker
-- [~] PDF accessible-text extraction helper in Python worker
-- [~] DOCX readable-text extraction helper in Python worker
+- [x] `.txt` and `.md` extraction helper in Python worker
+- [x] PDF accessible-text extraction helper in Python worker
+- [x] DOCX readable-text extraction helper in Python worker
 - [x] Browser upload UI for txt/md/pdf/docx
 - [x] Extraction API route that stores uploads and warnings
 - [x] User review/edit screen before style profile generation
@@ -899,7 +899,7 @@ Status key:
 
 ### Tests
 
-- [~] Text extraction tests for txt/md; PDF/DOCX helper coverage still needs fixtures
+- [x] Text extraction tests for txt/md/pdf/docx
 - [x] Style scorer deterministic output tests
 - [x] Reward mapping tests
 - [x] Hard penalty gate tests
