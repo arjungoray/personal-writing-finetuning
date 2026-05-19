@@ -83,3 +83,11 @@ export async function generateDataset(input: z.infer<typeof GenerateDatasetReque
   });
   return metadata;
 }
+
+export async function approveDataset(id: string): Promise<DatasetMetadata> {
+  const metadataPath = join(datasetDir(id), "metadata.json");
+  const current = DatasetMetadataSchema.parse(await readJsonFile(metadataPath, null));
+  const approved = DatasetMetadataSchema.parse({ ...current, status: "approved" });
+  await writeJsonFile(metadataPath, approved);
+  return approved;
+}
