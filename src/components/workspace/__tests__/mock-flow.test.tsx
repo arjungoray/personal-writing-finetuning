@@ -16,6 +16,7 @@ describe("MockFlowWorkspace", () => {
       const url = String(input);
       if (url === "/api/settings") {
         return jsonResponse({
+          dataDir: ".voice-lab",
           generatorModel: "gemini-3-flash-preview",
           judgeModel: "gemini-3-flash-preview",
           rayUnslothPath: "/tmp/Ray-Unsloth",

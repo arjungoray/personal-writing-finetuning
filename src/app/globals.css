@@ -373,6 +373,12 @@ input[type="checkbox"] {
   padding: 0 10px;
 }
 
+.inlineForm {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr auto;
+}
+
 textarea {
   resize: vertical;
 }

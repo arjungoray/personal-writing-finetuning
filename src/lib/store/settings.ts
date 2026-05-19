@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { writeFile } from "node:fs/promises";
 import { DEFAULT_GENERATOR_MODEL, DEFAULT_JUDGE_MODEL, DEFAULT_RAY_UNSLOTH_PATH } from "@/lib/config/env";
-import { getDataDir, getSettingsPath } from "@/lib/store/paths";
+import { DATA_DIR_CONFIG, getDataDir, getSettingsPath } from "@/lib/store/paths";
 import { readJsonFile, writeJsonFile } from "@/lib/store/json";
 
 export const SettingsSchema = z.object({
@@ -38,6 +39,9 @@ export async function readSettings(): Promise<Settings> {
 
 export async function updateSettings(patch: Partial<Settings>): Promise<Settings> {
   const current = await readSettings();
+  if (patch.dataDir && patch.dataDir !== current.dataDir) {
+    await writeFile(DATA_DIR_CONFIG, `${JSON.stringify({ dataDir: patch.dataDir }, null, 2)}\n`, "utf8");
+  }
   const next = SettingsSchema.parse({ ...current, ...patch, dataDir: getDataDir() });
   await writeJsonFile(getSettingsPath(), next);
   return next;

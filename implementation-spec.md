@@ -819,7 +819,7 @@ Status key:
 - [x] Non-secret settings persisted locally
 - [x] API keys read only from environment variables
 - [x] Writing sample records with metadata and corpus policy
-- [~] Settings option to move the data directory
+- [x] Settings option to move the data directory
 
 ### Writing Inputs And Extraction
 

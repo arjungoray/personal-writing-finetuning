@@ -103,6 +103,7 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
   const [extractionWarnings, setExtractionWarnings] = useState<string[]>([]);
   const [mockMode, setMockMode] = useState(true);
   const [smallSampleOverride, setSmallSampleOverride] = useState(false);
+  const [dataDir, setDataDir] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState("Ready for mock mode.");
   const [error, setError] = useState<string | null>(null);
@@ -134,17 +135,18 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
 
   async function loadSettings() {
     await runStep("Validating settings", async () => {
-      const settings = await getJson<{ generatorModel: string; judgeModel: string; rayUnslothPath: string; mockMode: boolean; smallSampleOverride: boolean }>("/api/settings");
+      const settings = await getJson<{ dataDir: string; generatorModel: string; judgeModel: string; rayUnslothPath: string; mockMode: boolean; smallSampleOverride: boolean }>("/api/settings");
       const usage = await getJson<{ totals: { totalTokens: number; generatorCalls: number; judgeCalls: number } }>("/api/usage");
       setUsageTotals(usage.totals);
       setMockMode(settings.mockMode);
       setSmallSampleOverride(settings.smallSampleOverride);
+      setDataDir(settings.dataDir);
       const validation = await postJson<{ ok: boolean; mockMode: boolean; message?: string }>("/api/settings/validate");
       setMessage(`${validation.ok ? "Validated" : "Validation failed"}: generator ${settings.generatorModel}; judge ${settings.judgeModel}; ${validation.message ?? settings.rayUnslothPath}.`);
     });
   }
 
-  async function updateSettingPatch(patch: { mockMode?: boolean; smallSampleOverride?: boolean }) {
+  async function updateSettingPatch(patch: { dataDir?: string; mockMode?: boolean; smallSampleOverride?: boolean }) {
     await runStep("Saving settings", async () => {
       const response = await fetch("/api/settings", {
         method: "PATCH",
@@ -412,6 +414,18 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
               />
               Small-sample override
             </label>
+          </div>
+          <label htmlFor="dataDirInput">Data directory</label>
+          <div className="inlineForm">
+            <input
+              id="dataDirInput"
+              value={dataDir}
+              placeholder=".voice-lab"
+              onChange={(event) => setDataDir(event.target.value)}
+            />
+            <button type="button" onClick={() => void updateSettingPatch({ dataDir })} disabled={Boolean(busy) || !dataDir.trim()}>
+              Save
+            </button>
           </div>
           <label htmlFor="writingUpload">Upload sample</label>
           <input
