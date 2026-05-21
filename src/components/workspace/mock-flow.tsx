@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Database, Download, FileText, Play, RefreshCw, Settings, Sparkles, Trash2 } from "lucide-react";
 import type { SetupCheck } from "@/lib/setup/checklist";
 
 type RunState = {
   id: string;
+  datasetId: string;
   status: string;
   completedSteps: number;
   totalSteps: number;
@@ -81,6 +82,10 @@ async function postJson<T>(path: string, body?: unknown): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+function countTrainRecords(records: DatasetRecord[]) {
+  return records.filter((record) => record.split === "train").length;
+}
+
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(path);
   if (!response.ok) throw new Error(`Request failed: ${response.status}`);
@@ -110,7 +115,9 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
 
   const canCreateProfile = Boolean(ids.writingId);
   const canCreateDataset = Boolean(ids.profileId);
-  const canStartRun = Boolean(ids.datasetId);
+  const activeRunStatuses: RunState["status"][] = ["queued", "running", "cancel_requested"];
+  const hasActiveRun = Boolean(run && activeRunStatuses.includes(run.status as RunState["status"]));
+  const canStartRun = Boolean(ids.datasetId) && !hasActiveRun;
   const latestMetrics = useMemo(() => events.at(-1)?.metrics ?? {}, [events]);
 
   async function runStep(label: string, action: () => Promise<void>) {
@@ -229,13 +236,29 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
     });
   }
 
+  async function hydrateActiveRun() {
+    const runsPayload = await getJson<{ runs: RunState[] }>("/api/runs");
+    const runs = Array.isArray(runsPayload.runs) ? runsPayload.runs : [];
+    const active = runs.find((candidate) => activeRunStatuses.includes(candidate.status));
+    if (!active) return;
+    setRun(active);
+    setIds((current) => ({ ...current, runId: active.id, datasetId: active.datasetId }));
+    setMessage(`Resuming ${active.status} run ${active.id}.`);
+    void pollRun(active.id);
+  }
+
+  useEffect(() => {
+    void hydrateActiveRun();
+  }, []);
+
   async function startRun() {
     if (!ids.datasetId) return;
     await runStep("Starting run", async () => {
+      const totalSteps = Math.max(countTrainRecords(datasetRecords), 2);
       const nextRun = await postJson<RunState>("/api/runs", {
         datasetId: ids.datasetId,
-        totalSteps: 2,
-        mockMode: true,
+        totalSteps,
+        mockMode,
       });
       setRun(nextRun);
       setIds((current) => ({ ...current, runId: nextRun.id }));
@@ -245,11 +268,13 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
   }
 
   async function pollRun(runId: string) {
-    for (let index = 0; index < 8; index += 1) {
-      await new Promise((resolve) => setTimeout(resolve, 300));
+    while (true) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       const runsPayload = await getJson<{ runs: RunState[] }>("/api/runs");
       const nextRun = runsPayload.runs.find((candidate) => candidate.id === runId);
-      if (nextRun) setRun(nextRun);
+      if (nextRun) {
+        setRun(nextRun);
+      }
       const eventsPayload = await getJson<{ events: ApiRunEvent[] }>(`/api/runs/${runId}/events`);
       setEvents(eventsPayload.events);
       if (nextRun && ["completed", "cancelled", "failed"].includes(nextRun.status)) {
@@ -278,16 +303,17 @@ export function MockFlowWorkspace({ initialChecks }: { initialChecks: SetupCheck
         seed: 9,
       });
       await postJson(`/api/datasets/${dataset.id}/approve`);
+      const recordsPayload = await getJson<{ records: DatasetRecord[] }>(`/api/datasets/${dataset.id}/records`);
+      setDatasetRecords(recordsPayload.records);
+      const totalSteps = Math.max(countTrainRecords(recordsPayload.records), 2);
       const nextRun = await postJson<RunState>("/api/runs", {
         datasetId: dataset.id,
-        totalSteps: 2,
-        mockMode: true,
+        totalSteps,
+        mockMode,
       });
       setIds({ writingId: writing.id, profileId: profile.id, datasetId: dataset.id, runId: nextRun.id });
-      const recordsPayload = await getJson<{ records: DatasetRecord[] }>(`/api/datasets/${dataset.id}/records`);
       const approvedProfile = await getJson<StyleProfile>(`/api/profiles/${profile.id}`);
       setProfile(approvedProfile);
-      setDatasetRecords(recordsPayload.records);
       setRun(nextRun);
       setMessage("Full mock flow started.");
       await pollRun(nextRun.id);

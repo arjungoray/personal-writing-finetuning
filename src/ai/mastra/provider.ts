@@ -1,4 +1,4 @@
-import { google } from "@ai-sdk/google";
+import { groq } from "@ai-sdk/groq";
 import { generateText } from "ai";
 import type { Settings } from "@/lib/store/settings";
 import { recordAiUsage } from "@/lib/usage/store";
@@ -15,9 +15,9 @@ export type AiTextResult = {
   model: string;
 };
 
-function requireGeminiKey() {
-  if (!process.env.GEMINI_API_KEY) {
-    throw new Error("GEMINI_API_KEY is required for live Gemini jobs.");
+function requireGroqKey() {
+  if (!process.env.GROQ_API_KEY) {
+    throw new Error("GROQ_API_KEY is required for live Groq jobs.");
   }
 }
 
@@ -29,18 +29,20 @@ function normalizeUsage(usage: unknown): AiUsage {
   return { inputTokens, outputTokens, totalTokens };
 }
 
-export async function generateGeminiText(params: {
+export async function generateAiText(params: {
   settings: Settings;
   kind: "generator" | "judge";
   model: string;
   system: string;
   prompt: string;
+  maxOutputTokens?: number;
 }): Promise<AiTextResult> {
-  requireGeminiKey();
+  requireGroqKey();
   const result = await generateText({
-    model: google(params.model),
+    model: groq(params.model),
     system: params.system,
     prompt: params.prompt,
+    maxOutputTokens: params.maxOutputTokens,
   });
 
   const usage = normalizeUsage(result.usage);
@@ -57,9 +59,9 @@ export async function generateGeminiText(params: {
   };
 }
 
-export async function validateGeminiSettings(settings: Settings) {
-  requireGeminiKey();
-  const result = await generateGeminiText({
+export async function validateAiSettings(settings: Settings) {
+  requireGroqKey();
+  const result = await generateAiText({
     settings,
     kind: "generator",
     model: settings.generatorModel,

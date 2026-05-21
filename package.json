@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/google": "^3.0.75",
+    "@ai-sdk/groq": "^3.0.39",
     "@mastra/core": "^1.35.0",
     "ai": "^6.0.185",
     "lucide-react": "^0.468.0",

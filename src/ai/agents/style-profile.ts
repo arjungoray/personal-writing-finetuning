@@ -1,6 +1,6 @@
 import { generateMockStyleProfile } from "@/lib/ai/mock/profile";
 import { parseJsonFromText } from "@/ai/mastra/json";
-import { generateGeminiText } from "@/ai/mastra/provider";
+import { generateAiText } from "@/ai/mastra/provider";
 import type { Settings } from "@/lib/store/settings";
 import { StyleProfileSchema, type StyleProfile, type UserDirective } from "@/lib/profiles/types";
 import type { WritingRecord } from "@/lib/writings/store";
@@ -19,7 +19,7 @@ export async function generateStyleProfileWithMastra(params: {
     });
   }
 
-  const response = await generateGeminiText({
+  const response = await generateAiText({
     settings: params.settings,
     kind: "generator",
     model: params.settings.generatorModel,

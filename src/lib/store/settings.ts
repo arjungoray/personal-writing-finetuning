@@ -3,13 +3,14 @@ import { writeFile } from "node:fs/promises";
 import { DEFAULT_GENERATOR_MODEL, DEFAULT_JUDGE_MODEL, DEFAULT_RAY_UNSLOTH_PATH } from "@/lib/config/env";
 import { DATA_DIR_CONFIG, getDataDir, getSettingsPath } from "@/lib/store/paths";
 import { readJsonFile, writeJsonFile } from "@/lib/store/json";
+import { ACTIVE_TRAINING_CONFIG, normalizeTrainingConfig } from "@/lib/training/config";
 
 export const SettingsSchema = z.object({
   dataDir: z.string().min(1),
   generatorModel: z.string().min(1),
   judgeModel: z.string().min(1),
   rayUnslothPath: z.string().min(1),
-  activeTrainingConfig: z.literal("qwen3_5_4b_1x_l4"),
+  activeTrainingConfig: z.preprocess(normalizeTrainingConfig, z.literal(ACTIVE_TRAINING_CONFIG)),
   mockMode: z.boolean(),
   smallSampleOverride: z.boolean(),
   datasetSeed: z.number().int().nonnegative(),
@@ -24,7 +25,7 @@ export const defaultSettings: Settings = {
   generatorModel: process.env.GENERATOR_MODEL ?? DEFAULT_GENERATOR_MODEL,
   judgeModel: process.env.JUDGE_MODEL ?? DEFAULT_JUDGE_MODEL,
   rayUnslothPath: process.env.RAY_UNSLOTH_PATH ?? DEFAULT_RAY_UNSLOTH_PATH,
-  activeTrainingConfig: "qwen3_5_4b_1x_l4",
+  activeTrainingConfig: ACTIVE_TRAINING_CONFIG,
   mockMode: true,
   smallSampleOverride: false,
   datasetSeed: 1729,

@@ -21,7 +21,7 @@ def test_judge_cache_key_is_stable_and_order_insensitive_for_references():
         reference_excerpt_hashes=["b", "a"],
         deterministic_evidence_hash="metrics",
         judge_provider="google",
-        judge_model="gemini-3-flash-preview",
+        judge_model="meta-llama/llama-4-scout-17b-16e-instruct",
         judge_prompt_version="v1",
     )
     changed_order = JudgeCacheInput(**{**base.__dict__, "reference_excerpt_hashes": ["a", "b"]})

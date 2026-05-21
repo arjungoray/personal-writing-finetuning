@@ -17,8 +17,8 @@ describe("MockFlowWorkspace", () => {
       if (url === "/api/settings") {
         return jsonResponse({
           dataDir: ".voice-lab",
-          generatorModel: "gemini-3-flash-preview",
-          judgeModel: "gemini-3-flash-preview",
+          generatorModel: "meta-llama/llama-4-scout-17b-16e-instruct",
+          judgeModel: "meta-llama/llama-4-scout-17b-16e-instruct",
           rayUnslothPath: "/tmp/Ray-Unsloth",
           mockMode: true,
           smallSampleOverride: false,

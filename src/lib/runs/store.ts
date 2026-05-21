@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join, relative } from "node:path";
-import { spawn } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import { z } from "zod";
 import { DatasetMetadataSchema } from "@/lib/datasets/types";
 import { emptyIndex, initializeDataDirectory, type VoiceLabIndex } from "@/lib/store/init";
@@ -10,6 +10,7 @@ import { readJsonFile, writeJsonFile } from "@/lib/store/json";
 import { getDataDir, getDataSubdirectoryPath, getIndexPath } from "@/lib/store/paths";
 import { readSettings } from "@/lib/store/settings";
 import { RunStateSchema, type RunEvent, type RunState } from "@/lib/runs/types";
+import { ACTIVE_TRAINING_CONFIG_FILE, ACTIVE_TRAINING_MODEL } from "@/lib/training/config";
 
 export const StartRunRequestSchema = z.object({
   datasetId: z.string().min(1),
@@ -49,6 +50,32 @@ export async function listRunEvents(id: string): Promise<RunEvent[]> {
   if (!existsSync(runEventsPath(id))) return [];
   const raw = await readFile(runEventsPath(id), "utf8");
   return raw.trim().split("\n").filter(Boolean).map((line) => JSON.parse(line) as RunEvent);
+}
+
+function attachWorkerOutput(child: ChildProcess, runId: string) {
+  const prefix = `[voice-lab][worker][${runId}]`;
+  const forward = (stream: NodeJS.WriteStream, logLine: (line: string) => void) => (chunk: Buffer | string) => {
+    const text = typeof chunk === "string" ? chunk : chunk.toString("utf8");
+    stream.write(text);
+    for (const line of text.split(/\r?\n/)) {
+      if (line.length > 0) {
+        logLine(line);
+      }
+    }
+  };
+
+  child.stdout?.on("data", forward(process.stdout, (line) => console.log(`${prefix} ${line}`)));
+  child.stderr?.on("data", forward(process.stderr, (line) => console.error(`${prefix} ${line}`)));
+}
+
+function spawnTrainingWorker(runId: string, jobPath: string) {
+  const relativeJobPath = relative(process.cwd(), jobPath);
+  return spawn("python3", ["-u", "worker/train.py", "--job", relativeJobPath], {
+    cwd: process.cwd(),
+    detached: false,
+    stdio: ["ignore", "pipe", "pipe"],
+    env: { ...process.env, PYTHONUNBUFFERED: "1" },
+  });
 }
 
 async function assertNoActiveRun() {
@@ -99,17 +126,26 @@ export async function startRun(input: StartRunInput): Promise<RunState> {
     mockMode: input.mockMode,
     appBaseUrl: input.appBaseUrl,
     rayUnslothPath: settings.rayUnslothPath,
-    configPath: join(settings.rayUnslothPath, "configs", "qwen3_5_4b_1x_l4.yaml"),
+    configPath: join(settings.rayUnslothPath, "configs", ACTIVE_TRAINING_CONFIG_FILE),
+    trainingBaseModel: ACTIVE_TRAINING_MODEL,
   });
 
-  const child = spawn("python3", ["worker/train.py", "--job", relative(process.cwd(), jobPath)], {
-    cwd: process.cwd(),
-    detached: false,
-    stdio: ["ignore", "ignore", "ignore"],
+  console.log(
+    `[voice-lab] Spawning training worker for run ${id} (mockMode=${input.mockMode}, totalSteps=${input.totalSteps}, job=${jobPath})`,
+  );
+  const child = spawnTrainingWorker(id, jobPath);
+  attachWorkerOutput(child, id);
+  child.on("error", (error) => {
+    console.error(`[voice-lab] Failed to spawn training worker for run ${id}:`, error);
+  });
+  child.on("exit", (code, signal) => {
+    const label = code === 0 ? "completed" : "failed";
+    console.log(`[voice-lab] Training worker exited for run ${id} (${label}, code=${code ?? "null"}, signal=${signal ?? "null"})`);
   });
   child.unref();
 
   const runningState = RunStateSchema.parse({ ...state, status: "running", pid: child.pid ?? null, startedAt: new Date().toISOString(), currentPhase: "starting" });
+  console.log(`[voice-lab] Run ${id} marked running (pid=${child.pid ?? "unknown"})`);
   await writeJsonFile(runStatePath(id), runningState);
   const index = await readJsonFile<VoiceLabIndex>(getIndexPath(), emptyIndex);
   await writeJsonFile(getIndexPath(), {
@@ -154,10 +190,15 @@ export async function resumeRun(id: string): Promise<RunState> {
     throw new Error("Only cancelled or failed runs can be resumed.");
   }
   const jobPath = join(runDir(id), "job.json");
-  const child = spawn("python3", ["worker/train.py", "--job", relative(process.cwd(), jobPath)], {
-    cwd: process.cwd(),
-    detached: false,
-    stdio: ["ignore", "ignore", "ignore"],
+  console.log(`[voice-lab] Resuming training worker for run ${id} (job=${jobPath})`);
+  const child = spawnTrainingWorker(id, jobPath);
+  attachWorkerOutput(child, id);
+  child.on("error", (error) => {
+    console.error(`[voice-lab] Failed to resume training worker for run ${id}:`, error);
+  });
+  child.on("exit", (code, signal) => {
+    const label = code === 0 ? "completed" : "failed";
+    console.log(`[voice-lab] Resumed training worker exited for run ${id} (${label}, code=${code ?? "null"}, signal=${signal ?? "null"})`);
   });
   child.unref();
   const next = RunStateSchema.parse({

@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { AppEnvironment } from "@/lib/config/env";
+import { ACTIVE_TRAINING_CONFIG_FILE, ACTIVE_TRAINING_MODEL_LABEL } from "@/lib/training/config";
 
 export type SetupCheck = {
   id: string;
@@ -10,15 +11,15 @@ export type SetupCheck = {
 };
 
 export function getFirstRunChecklist(env: AppEnvironment): SetupCheck[] {
-  const configPath = join(env.rayUnslothPath, "configs", "qwen3_5_4b_1x_l4.yaml");
+  const configPath = join(env.rayUnslothPath, "configs", ACTIVE_TRAINING_CONFIG_FILE);
   const sourcePath = join(env.rayUnslothPath, "src");
 
   return [
     {
-      id: "gemini-key",
-      label: "Gemini API key detected",
-      state: env.geminiApiKeyDetected ? "ready" : "missing",
-      detail: env.geminiApiKeyDetected ? "Environment key is present." : "Set GEMINI_API_KEY for live AI jobs.",
+      id: "groq-key",
+      label: "Groq API key detected",
+      state: env.groqApiKeyDetected ? "ready" : "missing",
+      detail: env.groqApiKeyDetected ? "Environment key is present." : "Set GROQ_API_KEY for live AI jobs.",
     },
     {
       id: "mastra-models",
@@ -39,8 +40,8 @@ export function getFirstRunChecklist(env: AppEnvironment): SetupCheck[] {
       detail: "Checked when a real training job starts.",
     },
     {
-      id: "qwen-config",
-      label: "4B config available",
+      id: "training-config",
+      label: `${ACTIVE_TRAINING_MODEL_LABEL} config available`,
       state: existsSync(configPath) ? "ready" : "missing",
       detail: configPath,
     },

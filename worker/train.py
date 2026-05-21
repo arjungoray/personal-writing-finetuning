@@ -8,7 +8,7 @@ import statistics
 import time
 
 from judge_cache import JudgeCacheInput, JudgeCacheStore
-from live_training import run_live_training
+from log import log, log_exception, log_stage
 
 
 def write_json(path: Path, value: dict) -> None:
@@ -31,7 +31,15 @@ def update_state(run_dir: Path, state: dict, **updates: object) -> dict:
     return next_state
 
 
+def import_live_training():
+    with log_stage("import", "Import live_training module"):
+        from live_training import run_live_training
+
+    return run_live_training
+
+
 def run_mock_training(job: dict) -> None:
+    log("run", "Mock training worker started.", run_id=job["runId"], total_steps=job["totalSteps"])
     run_dir = Path(job["runDir"])
     cache = JudgeCacheStore(Path(job["dataDir"]) / "judge-cache")
     state_path = run_dir / "run_state.json"
@@ -43,6 +51,7 @@ def run_mock_training(job: dict) -> None:
     start_step = int(state.get("completedSteps", 0)) + 1
 
     for step in range(start_step, job["totalSteps"] + 1):
+        log("run", "Mock training step started.", run_id=job["runId"], step=step)
         if (run_dir / "cancel_requested").exists():
             now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             append_event(run_dir, {
@@ -84,6 +93,7 @@ def run_mock_training(job: dict) -> None:
                 })
         now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         for phase in ("sampling", "judging", "training"):
+            log("mock", f"Mock {phase} phase completed.", run_id=job["runId"], step=step)
             append_event(run_dir, {
                 "runId": job["runId"],
                 "timestamp": now,
@@ -142,6 +152,7 @@ def run_mock_training(job: dict) -> None:
     })
     update_state(run_dir, state, status="completed", finishedAt=now, currentPhase="completed")
     write_json(run_dir / "judge_cache_summary.json", cache.summary())
+    log("run", "Mock training completed.", run_id=job["runId"])
 
 
 def main() -> None:
@@ -149,13 +160,16 @@ def main() -> None:
     parser.add_argument("--job", required=True)
     args = parser.parse_args()
     job = json.loads(Path(args.job).read_text(encoding="utf-8"))
-    if job.get("mockMode", True):
+    mock_mode = bool(job.get("mockMode", True))
+    log("worker", "Training worker process started.", run_id=job.get("runId"), mock_mode=mock_mode, job_path=args.job)
+    if mock_mode:
         run_mock_training(job)
     else:
         run_dir = Path(job["runDir"])
         state = json.loads((run_dir / "run_state.json").read_text(encoding="utf-8"))
 
         def emit_event(phase: str, step: int, message: str, metrics: dict) -> None:
+            log("event", message, run_id=job["runId"], phase=phase, step=step)
             append_event(run_dir, {
                 "runId": job["runId"],
                 "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -168,15 +182,25 @@ def main() -> None:
         def update_live_state(**updates: object) -> dict:
             nonlocal state
             state = update_state(run_dir, state, **updates)
+            log("state", "Run state updated.", run_id=job["runId"], **{key: value for key, value in updates.items() if key != "finishedAt"})
             return state
 
         try:
-            asyncio_run = __import__("asyncio").run
-            asyncio_run(run_live_training(job, emit_event, update_live_state))
+            run_live_training = import_live_training()
+            with log_stage("run", "Execute live training pipeline", run_id=job["runId"]):
+                asyncio_run = __import__("asyncio").run
+                asyncio_run(run_live_training(job, emit_event, update_live_state))
         except Exception as error:
+            log_exception("run", "Live training failed.", error=error, run_id=job["runId"])
             update_live_state(status="failed", finishedAt="now", currentPhase="failed", error=str(error))
             raise
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+
+    try:
+        main()
+    except Exception as error:
+        log_exception("worker", "Training worker crashed.", error=error)
+        sys.exit(1)
