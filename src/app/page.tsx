@@ -1,8 +1,10 @@
 import { Brain, Database, FileText, Gauge, Play, SlidersHorizontal } from "lucide-react";
 import { FirstRunChecklist } from "@/components/first-run-checklist";
+import { MockFlowWorkspace } from "@/components/workspace/mock-flow";
 import { getAppEnvironment } from "@/lib/config/env";
 import { MODAL_PRICING } from "@/lib/pricing/modal";
 import { getFirstRunChecklist } from "@/lib/setup/checklist";
+import { ACTIVE_TRAINING_MODEL, ACTIVE_TRAINING_MODEL_LABEL } from "@/lib/training/config";
 
 const pipeline = [
   { label: "Upload", detail: "Paste text or extract readable documents.", icon: FileText },
@@ -23,13 +25,13 @@ export default function Home() {
           <h1>Writing fine-tuning workspace</h1>
         </div>
         <div className="navActions">
-          <button type="button" aria-label="Settings">
+          <a className="iconButton" href="#workspace" aria-label="Settings">
             <SlidersHorizontal aria-hidden="true" />
-          </button>
-          <button type="button" className="primaryAction">
+          </a>
+          <a className="buttonLike primaryAction" href="#workspace">
             <Play aria-hidden="true" />
             Start flow
-          </button>
+          </a>
         </div>
       </nav>
 
@@ -38,13 +40,13 @@ export default function Home() {
           <p className="eyebrow">Local, single-user, mockable</p>
           <h2>Build a reviewed style profile, freeze an RL dataset, and watch training mechanics directly.</h2>
           <p>
-            V1 targets the active Ray-Unsloth Qwen 3.5 4B L4 config while keeping model and config selection explicit for future expansion.
+            V1 targets the active Ray-Unsloth {ACTIVE_TRAINING_MODEL_LABEL} L4 config while keeping model and config selection explicit for future expansion.
           </p>
         </div>
         <div className="modelPanel">
           <div className="modelRow">
             <span>Active model</span>
-            <strong>qwen3.5-4b</strong>
+            <strong>{ACTIVE_TRAINING_MODEL}</strong>
           </div>
           <div className="modelRow">
             <span>Generator</span>
@@ -66,6 +68,8 @@ export default function Home() {
           </article>
         ))}
       </section>
+
+      <MockFlowWorkspace initialChecks={checks} />
 
       <div className="contentGrid">
         <FirstRunChecklist checks={checks} />
