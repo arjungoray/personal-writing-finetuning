@@ -16,10 +16,10 @@ The app binds to `127.0.0.1` by default. Runtime data is stored under `.voice-la
 Copy `.env.example` to `.env.local` and fill in values as needed:
 
 ```bash
-GEMINI_API_KEY=
-GENERATOR_MODEL=gemini-3-flash-preview
-JUDGE_MODEL=gemini-3-flash-preview
-RAY_UNSLOTH_PATH=/Users/arjungoray/Developer/Ray-Unsloth
+GROQ_API_KEY=
+GENERATOR_MODEL=meta-llama/llama-4-scout-17b-16e-instruct
+JUDGE_MODEL=meta-llama/llama-4-scout-17b-16e-instruct
+RAY_UNSLOTH_PATH=/Users/arjungoray/Developer/ray-unsloth
 ```
 
-Mock mode is available for local UI flows and tests without calling Gemini.
+Mock mode is available for local UI flows and tests without calling Groq.

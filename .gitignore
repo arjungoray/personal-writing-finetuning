@@ -1,10 +1,12 @@
 .env*
 !.env.example
 .voice-lab/
+.voice-lab-config.json
 .next/
 node_modules/
 __pycache__/
 *.pyc
+*.egg-info/
 .venv/
 dist/
 build/
