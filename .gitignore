@@ -1,6 +1,7 @@
 .env*
 !.env.example
 .voice-lab/
+.voice-lab-config.json
 .next/
 node_modules/
 __pycache__/

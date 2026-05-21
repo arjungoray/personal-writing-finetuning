@@ -7,6 +7,6 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   const body = await request.json();
-  const patch = SettingsSchema.partial().omit({ dataDir: true }).parse(body);
+  const patch = SettingsSchema.partial().parse(body);
   return NextResponse.json(await updateSettings(patch));
 }

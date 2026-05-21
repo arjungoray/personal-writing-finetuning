@@ -10,7 +10,7 @@ import { getIndexPath } from "@/lib/store/paths";
 
 export const WritingInputSchema = z.object({
   title: z.string().min(1).max(160),
-  sourceType: z.enum(["pasted_text", "txt", "md"]),
+  sourceType: z.enum(["pasted_text", "txt", "md", "pdf", "docx"]),
   text: z.string().min(1),
   modeTags: z.array(z.enum(["email", "essay", "technical_note", "casual_message"])).default([]),
   extractionWarnings: z.array(z.string()).default([]),
